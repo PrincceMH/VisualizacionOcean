@@ -1,0 +1,52 @@
+# Prerrequisitos
+*.d
+
+# Archivos compilados y objetos
+*.slo
+*.lo
+*.o
+*.obj
+*.suo
+*.tlog
+*.ilk
+*.meta
+*.pdb
+*.idb
+
+# Archivos ejecutables y librerías dinámicas
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.app
+
+# Carpetas de compilación y binarios
+bin/
+build/
+out/
+Release/
+Debug/
+x64/
+x86/
+
+# Archivos de CMake 
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# Archivos de Visual Studio
+.vs/
+*.user
+*.db
+*.opendb
+*.VC.db
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
