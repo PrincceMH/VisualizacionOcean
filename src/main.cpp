@@ -10,6 +10,38 @@
 
 Ocean miOceano(50, 50, 0.5f);
 
+// Configura una fuente de luz (ambiental + difusa + especular) y el
+// material del oceano (con especular fuerte para simular brillos en las olas)
+void initLuzYMaterial() {
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE); // por seguridad, garantiza normales unitarias
+
+    // --- Fuente de luz (GL_LIGHT0) ---
+    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.3f, 1.0f };
+    GLfloat luzDifusa[]     = { 0.8f,  0.8f,  0.8f, 1.0f };
+    GLfloat luzEspecular[]  = { 1.0f,  1.0f,  1.0f, 1.0f };
+    GLfloat posicionLuz[]   = { 10.0f, 15.0f, 10.0f, 1.0f }; // luz posicional
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  luzAmbiental);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  luzDifusa);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+    glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
+
+    // --- Material del oceano ---
+    // GL_COLOR_MATERIAL deja que glColor3f() (en display()) defina el
+    // componente ambiental y difuso del material, para poder seguir
+    // controlando el color del agua facilmente.
+    glEnable(GL_COLOR_MATERIAL);
+    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+    // El componente especular y el brillo (shininess) se fijan aparte:
+    // esto es lo que genera los reflejos/brillos sobre las olas.
+    GLfloat matEspecular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
+    glMaterialfv(GL_FRONT, GL_SPECULAR, matEspecular);
+    glMaterialf(GL_FRONT, GL_SHININESS, 96.0f); // mas alto = brillo mas pequeno y concentrado
+}
+
 
 void display() {
     
@@ -60,6 +92,8 @@ int main(int argc, char** argv) {
     glutCreateWindow("Proyecto Oceano");
 
     glEnable(GL_DEPTH_TEST);
+
+    initLuzYMaterial();
 
     miOceano.loadWaves("data/spectrum.txt");
 
