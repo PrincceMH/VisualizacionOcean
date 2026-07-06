@@ -21,6 +21,9 @@
 *.out
 *.app
 
+# Binario compilado en macOS (sin extension)
+/Oceano
+
 # Carpetas de compilación y binarios
 bin/
 build/
@@ -46,6 +49,12 @@ compile_commands.json
 *.db
 *.opendb
 *.VC.db
+
+# Artefactos de compilacion de LaTeX
+*.synctex.gz
+*.aux
+*.log
+*.toc
 
 # Archivos de sistema operativo
 .DS_Store

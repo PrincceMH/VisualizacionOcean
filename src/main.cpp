@@ -1,4 +1,8 @@
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
+#endif
 #include "../include/Ocean.h"
 
 // Creamos una instancia global de nuestro océano
@@ -26,6 +30,13 @@ void display() {
 }
 
 
+// Avanza el tiempo de simulacion y solicita un nuevo cuadro.
+void idle() {
+    float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    miOceano.update(time);
+    glutPostRedisplay();
+}
+
 void reshape(int w, int h) {
     if (h == 0) h = 1;
     float ratio = w * 1.0f / h;
@@ -50,8 +61,11 @@ int main(int argc, char** argv) {
 
     glEnable(GL_DEPTH_TEST);
 
+    miOceano.loadWaves("data/spectrum.txt");
+
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
+    glutIdleFunc(idle);
 
     glutMainLoop();
     
