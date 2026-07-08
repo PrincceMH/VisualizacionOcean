@@ -9,6 +9,9 @@
 #include <cmath>
 #include <cstdlib>
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "../include/stb_image.h" 
+
 static const float PI = 3.14159265358979323846f;
 
 //dimensiones y malla
@@ -84,17 +87,22 @@ void Ocean::drawTriangles() {
 
 // Dibuja la superficie rellena afectada por la iluminacion y material.
 void Ocean::draw() {
+
+    glEnable(GL_TEXTURE_2D);
+    
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     drawTriangles();
+    
+    glDisable(GL_TEXTURE_2D);
 }
 
-
 // Lee amplitud, direccion y frecuencia por linea desde el archivo de espectro;
-// la fase se genera aleatoriamente como indica el enunciado del laboratorio.
 bool Ocean::loadWaves(const std::string& filename) {
-    // El directorio de trabajo cambia segun desde donde se ejecute el
-    // programa (terminal, IDE, carpeta de build, etc). Probamos varias
-    // rutas comunes para no depender de eso.
+    
     std::vector<std::string> posiblesRutas = {
         filename,
         "./" + filename,
@@ -141,9 +149,41 @@ bool Ocean::loadWaves(const std::string& filename) {
     return !waves.empty();
 }
 
-bool Ocean::loadTexture(const std::string& filename) { return true; }
+bool Ocean::loadTexture(const std::string& filename) {
+    // 1. Generar un ID para la textura en OpenGL
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
 
-// h(x,z,t) = suma de Ai * cos(ki*(x*cos(di) + z*sin(di)) - 2*pi*fi*t + pi)
+    // 2. Configurar cómo se repetira la textura (ideal para el oceano)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    
+    // 3. Configurar el filtrado para evitar que se vea muy pixeleado
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // 4. Cargar la imagen con stb_image
+    int width, height, nrChannels;
+    // TGA suele tener la imagen invertida verticalmente, esto lo corrige:
+    stbi_set_flip_vertically_on_load(true); 
+    
+    unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+    
+    if (data) {
+        // Determinar si la imagen tiene canal Alfa (transparencia) o solo RGB
+        GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
+        
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+        std::cout << "Textura cargada exitosamente: " << filename << std::endl;
+        return true;
+    } else {
+        std::cerr << "Error al cargar la textura: " << filename << std::endl;
+        return false;
+    }
+}
+
 void Ocean::update(float time) {
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
@@ -168,13 +208,7 @@ void Ocean::update(float time) {
 }
 
 // Calcula la normal de cada vertice promediando las normales de las caras
-// (triangulos) que lo tocan, tal como pide el enunciado:
-// 1) Para cada triangulo se calcula su normal de cara con el producto
-//    cruz de dos de sus aristas.
-// 2) Esa normal se suma en cada uno de los 3 vertices del triangulo
-//    (sin normalizar antes, para que los triangulos mas grandes pesen
-//    un poco mas, lo cual da un resultado mas suave).
-// 3) Al final, se normaliza la suma acumulada en cada vertice.
+// (triangulos) que lo tocan
 void Ocean::computeNormals() {
     // 1. Reiniciar el acumulador de cada vertice
     for (int i = 0; i < rows; ++i) {
@@ -194,7 +228,7 @@ void Ocean::computeNormals() {
             WPoint& p01 = mesh[i][j + 1];
             WPoint& p11 = mesh[i + 1][j + 1];
 
-            // --- Triangulo 1: p00 - p10 - p01 ---
+            // Triangulo 1: p00 p10 p01
             float e1x = p10.x - p00.x, e1y = p10.y - p00.y, e1z = p10.z - p00.z;
             float e2x = p01.x - p00.x, e2y = p01.y - p00.y, e2z = p01.z - p00.z;
 
@@ -206,7 +240,7 @@ void Ocean::computeNormals() {
             p10.nx += fnx; p10.ny += fny; p10.nz += fnz;
             p01.nx += fnx; p01.ny += fny; p01.nz += fnz;
 
-            // --- Triangulo 2: p01 - p10 - p11 ---
+            // Triangulo 2: p01 p10 p11
             e1x = p10.x - p01.x; e1y = p10.y - p01.y; e1z = p10.z - p01.z;
             e2x = p11.x - p01.x; e2y = p11.y - p01.y; e2z = p11.z - p01.z;
 
