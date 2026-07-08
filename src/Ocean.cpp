@@ -82,27 +82,10 @@ void Ocean::drawTriangles() {
     glEnd();
 }
 
-// Dibuja la superficie rellena (afectada por la iluminacion/material) y,
-// encima, la malla de triangulos en modo wireframe translucido, sin luz,
-// para poder ver a la vez el brillo del agua y la estructura de la malla.
+// Dibuja la superficie rellena afectada por la iluminacion y material.
 void Ocean::draw() {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     drawTriangles();
-
-    glPushAttrib(GL_CURRENT_BIT | GL_ENABLE_BIT | GL_POLYGON_BIT | GL_COLOR_BUFFER_BIT | GL_LIGHTING_BIT);
-        glDisable(GL_LIGHTING); // las lineas de la malla se ven mejor sin sombreado
-        glEnable(GL_POLYGON_OFFSET_LINE);
-        glPolygonOffset(-1.0f, -1.0f);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glColor4f(0.0f, 0.0f, 0.0f, 0.25f); // negro al 25% de opacidad
-
-        drawTriangles();
-    glPopAttrib();
-
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 
