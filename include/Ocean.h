@@ -20,6 +20,7 @@ private:
     
     // ID para guardar la textura cargada en OpenGL
     unsigned int textureID;
+    
 
     // Emite los triangulos de la malla (se reutiliza para el relleno
     // iluminado y para el wireframe encima)

@@ -5,10 +5,10 @@ struct WPoint {
     // Coordenadas espaciales
     float x, y, z;
     
-    // Coordenadas de la normal (para que la luz rebote correctamente)
+    // Coordenadas de la normal 
     float nx, ny, nz;
     
-    // Coordenadas de textura (para mapear tu archivo ocean.tga)
+    // Coordenadas de textura 
     float s, t;
 
     // Constructor por defecto

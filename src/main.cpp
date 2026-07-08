@@ -8,7 +8,8 @@
 // Creamos una instancia global de nuestro océano
 // 50 filas, 50 columnas, con una separación de 0.5 entre cada punto
 
-Ocean miOceano(50, 50, 0.5f);
+Ocean miOceano(100, 100, 0.5f);
+
 
 // Configura una fuente de luz (ambiental + difusa + especular) y el
 // material del oceano (con especular fuerte para simular brillos en las olas)
