@@ -69,6 +69,13 @@ void idle() {
     glutPostRedisplay();
 }
 
+// Cierra la ventana con ESC o 'q'.
+void keyboard(unsigned char key, int x, int y) {
+    if (key == 27 || key == 'q' || key == 'Q') {
+        exit(0);
+    }
+}
+
 void reshape(int w, int h) {
     if (h == 0) h = 1;
     float ratio = w * 1.0f / h;
@@ -100,6 +107,7 @@ int main(int argc, char** argv) {
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutIdleFunc(idle);
+    glutKeyboardFunc(keyboard);
 
     glutMainLoop();
     
