@@ -27,7 +27,8 @@ void initLuzYMaterial() {
     // --- FUENTE DE LUZ (luz que brilla desde afuera) ---
     GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };  // grisáceo neutro
     GLfloat luzDifusa[]     = { 0.85f, 0.85f, 0.80f, 1.0f };  // ligeramente amarilla
-    GLfloat luzEspecular[]  = { 1.0f,  1.0f,  1.0f, 1.0f };   // blanca pura
+    // Bajamos un poco mas el specular para suavizar el brillo blanco
+    GLfloat luzEspecular[]  = { 0.50f, 0.50f, 0.52f, 1.0f };   // blanca mas tenue
     GLfloat posicionLuz[]   = { 10.0f, 15.0f, 10.0f, 1.0f };
 
     glLightfv(GL_LIGHT0, GL_AMBIENT,  luzAmbiental);
@@ -42,13 +43,13 @@ void initLuzYMaterial() {
     // Componente Difusa: color bajo iluminacion directa (azul agua)
     GLfloat waterDiffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
     
-    // Componente Especular: brillo/reflejo (plateado con matiz azul)
-    GLfloat waterSpecular[] = { 0.90f, 0.90f, 0.85f, 1.0f };
+    // Componente Especular: brillo/reflejo (más controlado para un agua menos quemada)
+    GLfloat waterSpecular[] = { 0.45f, 0.52f, 0.58f, 1.0f };
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   waterAmbient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   waterDiffuse);
     glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  waterSpecular);
-    glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, 90.0f);
+    glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, 48.0f);
 }
 
 void display() {
