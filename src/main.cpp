@@ -18,16 +18,16 @@ int lastX = 0, lastY = 0;
 
 float simTime = 0.0f;
 
-// Configura una fuente de luz (ambiental + difusa + especular) y el
-// material del oceano (con especular fuerte para simular brillos en las olas)
+// Configura iluminacion y material del oceano (realista)
 void initLuzYMaterial() {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
 
-    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.3f, 1.0f };
-    GLfloat luzDifusa[]     = { 0.8f,  0.8f,  0.8f, 1.0f };
-    GLfloat luzEspecular[]  = { 1.0f,  1.0f,  1.0f, 1.0f };
+    // --- FUENTE DE LUZ (luz que brilla desde afuera) ---
+    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };  // grisáceo neutro
+    GLfloat luzDifusa[]     = { 0.85f, 0.85f, 0.80f, 1.0f };  // ligeramente amarilla
+    GLfloat luzEspecular[]  = { 1.0f,  1.0f,  1.0f, 1.0f };   // blanca pura
     GLfloat posicionLuz[]   = { 10.0f, 15.0f, 10.0f, 1.0f };
 
     glLightfv(GL_LIGHT0, GL_AMBIENT,  luzAmbiental);
@@ -35,12 +35,20 @@ void initLuzYMaterial() {
     glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
     glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
-    glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    // --- MATERIAL DEL OCEANO (como refleja la luz el agua) ---
+    // Componente Ambiente: color base en sombra (azul profundo)
+    GLfloat waterAmbient[]  = { 0.05f, 0.10f, 0.15f, 1.0f };
+    
+    // Componente Difusa: color bajo iluminacion directa (azul agua)
+    GLfloat waterDiffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
+    
+    // Componente Especular: brillo/reflejo (plateado con matiz azul)
+    GLfloat waterSpecular[] = { 0.90f, 0.90f, 0.85f, 1.0f };
 
-    GLfloat matEspecular[] = { 0.9f, 0.9f, 0.9f, 1.0f };
-    glMaterialfv(GL_FRONT, GL_SPECULAR, matEspecular);
-    glMaterialf(GL_FRONT, GL_SHININESS, 96.0f);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,   waterAmbient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,   waterDiffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR,  waterSpecular);
+    glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, 90.0f);
 }
 
 void display() {
@@ -62,10 +70,11 @@ void display() {
 
     gluLookAt(ex, ey, ez,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0);
 
+    // Actualiza posicion de luz despues de gluLookAt (anclada al mundo)
     GLfloat posicionLuz[] = { 10.0f, 15.0f, 10.0f, 1.0f };
     glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
-    glColor3f(0.0f, 0.8f, 1.0f);
+    // NO usamos glColor3f aqui porque el material ya esta definido en initLuzYMaterial()
     miOceano.draw();
 
     glutSwapBuffers();
