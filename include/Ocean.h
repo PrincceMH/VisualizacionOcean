@@ -20,6 +20,7 @@ private:
     
     // ID para guardar la textura cargada en OpenGL
     unsigned int textureID;
+    void drawTriangles();
 
 public:
     // Constructor

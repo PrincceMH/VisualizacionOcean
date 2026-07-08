@@ -4,8 +4,7 @@
 // Creamos una instancia global de nuestro océano
 // 50 filas, 50 columnas, con una separación de 0.5 entre cada punto
 
-Ocean miOceano(50, 50, 0.5f);
-
+Ocean miOceano(100, 100, 0.5f);
 
 void display() {
     
@@ -23,6 +22,14 @@ void display() {
     miOceano.draw();
 
     glutSwapBuffers();
+}
+
+// Se ejecuta continuamente cuando GLUT no tiene otros eventos que atender.
+// Es lo que realmente hace que el oceano se anime frame a frame.
+void idle() {
+    float t = glutGet(GLUT_ELAPSED_TIME) / 1000.0f; // tiempo en segundos
+    miOceano.update(t);
+    glutPostRedisplay();
 }
 
 
@@ -50,8 +57,12 @@ int main(int argc, char** argv) {
 
     glEnable(GL_DEPTH_TEST);
 
+    // Carga las olas desde el archivo de texto (amplitud freq direccion fase)
+    miOceano.loadWaves("waves.txt");
+
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
+    glutIdleFunc(idle);
 
     glutMainLoop();
     
