@@ -8,7 +8,8 @@
 
 static const float PI = 3.14159265f;
 
-Ocean miOceano(50, 50, 0.5f);
+// Malla mas amplia para que el oceano ocupe mas espacio en escena
+Ocean miOceano(70, 70, 0.6f);
 
 // Variables de camara orbital
 int winW = 800, winH = 600;
