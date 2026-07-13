@@ -19,14 +19,14 @@ int lastX = 0, lastY = 0;
 
 float simTime = 0.0f;
 
-// Configura iluminacion y material del oceano (realista)
+// Configura iluminacion y material del oceano 
 void initLuzYMaterial() {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
 
-    // --- FUENTE DE LUZ (luz que brilla desde afuera) ---
-    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };  // grisáceo neutro
+    //FUENTE DE LUZ (luz que brilla desde afuera
+    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };  // grisaceo neutro
     GLfloat luzDifusa[]     = { 0.85f, 0.85f, 0.80f, 1.0f };  // ligeramente amarilla
     // Bajamos un poco mas el specular para suavizar el brillo blanco
     GLfloat luzEspecular[]  = { 0.50f, 0.50f, 0.52f, 1.0f };   // blanca mas tenue
@@ -76,7 +76,6 @@ void display() {
     GLfloat posicionLuz[] = { 10.0f, 15.0f, 10.0f, 1.0f };
     glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
 
-    // NO usamos glColor3f aqui porque el material ya esta definido en initLuzYMaterial()
     miOceano.draw();
 
     glutSwapBuffers();
@@ -135,6 +134,7 @@ int main(int argc, char** argv) {
     initLuzYMaterial();
 
     miOceano.loadWaves("data/spectrum.txt");
+    miOceano.loadTexture("assets/textures/ocean.tga");
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
