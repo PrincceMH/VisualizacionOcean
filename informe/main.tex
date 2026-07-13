@@ -1,0 +1,98 @@
+
+% CREACIÓN DEL DOCUMENTO, FUENTE E IDIOMA
+\documentclass[a4paper,11pt,hidelinks]{article} 
+\usepackage[utf8]{inputenc}               % Codificación UTF-8
+\usepackage[T1]{fontenc}                  % Soporta caracteres acentuados
+\usepackage{lmodern}                      % Tipografía moderna
+\usepackage[spanish]{babel}               % Idioma del documento en español
+\def\templateversion{3.1.3}               % Versión del template
+               
+% INFORMACIÓN DEL DOCUMENTO
+\newcommand{\nombredelinforme}{Sistema de Animación de Océano}
+\newcommand{\temaatratar}{Avance \#1}
+\newcommand{\fecharealizacion}{\today}
+\newcommand{\fechaentrega}{\today}
+
+\newcommand{\nombredelcurso}{Computación Gráfica}
+\newcommand{\nombredelprofesor}{Percy Maldonado Quispe}
+
+\newcommand{\nombreuniversidad}{Universidad Nacional de San Agustín}
+\newcommand{\nombrefacultad}{Facultad de Ingeniería de Producción y Servicios}
+\newcommand{\departamentouniversidad}{Escuela Profesional de Ciencia de la Computación}
+\newcommand{\imagendeldepartamento}{resources/logos/unsa}
+\newcommand{\imagendeldepartamentoescl}{0.14}
+\newcommand{\localizacionuniversidad}{Arequipa, Perú}
+
+% INTEGRANTES, PROFESORES Y FECHAS
+\newcommand{\tablaintegrantes}{
+\begin{minipage}{0.92\textwidth}
+
+\begin{center}
+\begin{tabular}{rc}
+
+	\vspace{0.2 cm}
+	\textbf{Autores:}
+		& \begin{tabular}[t]{@{}c@{}}
+			\large {Princce Yorwin Mariños Hilario}\\
+			\large {Gleddynuri Marbel Picha Chañi}\\
+			\large {Wilson Ramos Pacco}\\
+			\large {Juan Carlos Postigo Cabana}\\
+			%
+		\end{tabular} \\
+	\vspace{0.2 cm}
+	\textbf{Profesor:}
+		& \begin{tabular}[t]{@{}c@{}}
+			\large {{\nombredelprofesor}} \\
+		\end{tabular} \\
+	\textbf{Curso:}
+		& \begin{tabular}[t]{@{}c@{}}
+			\large {\nombredelcurso}\\\\
+		\end{tabular} \\
+	\multicolumn{2}{c}{\Large {\fechaentrega}} \\
+	\multicolumn{2}{c}{\Large {\localizacionuniversidad}}
+\end{tabular}
+\end{center}
+\end{minipage}}
+
+% CONFIGURACIONES
+\input{lib/config}
+
+% IMPORTACIÓN DE LIBRERÍAS
+\input{lib/imports}
+
+% IMPORTACIÓN DE FUNCIONES
+\input{lib/functions}
+
+% IMPORTACIÓN DE FUNCIONES
+\input{lib/comandos}
+
+% IMPORTACIÓN DE AMBIENTES Y ESTILOS
+\input{lib/styles}
+
+% CONFIGURACIÓN INICIAL DEL DOCUMENTO
+\input{lib/initconf}
+
+% PORTADA
+\begin{document}
+
+\input{lib/portrait}
+% CONFIGURACIÓN DE PÁGINA Y ENCABEZADOS
+\input{lib/pageconf}
+
+% CONFIGURACIONES FINALES - INICIO DE LAS SECCIONES
+\input{lib/finalconf}
+
+\vspace*{\fill}
+\tableofcontents
+\vspace*{\fill}
+\newpage
+
+% ======================== INICIO DEL DOCUMENTO ========================
+% RESUMEN O ABSTRACT
+\input{avance01}
+
+% \input{body} % Se incluye el ejemplo del documento, se puede borrar
+
+
+% FIN DEL DOCUMENTO
+\end{document}

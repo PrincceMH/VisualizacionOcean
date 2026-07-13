@@ -215,32 +215,110 @@ void Ocean::draw() {
  \caption{Malla base plana renderizada en modo alambre, estado real del código en este avance.}
  \end{figure}
 
+\section{Animación del oleaje}
+
+Con la topología de la malla validada, se implementó la carga del espectro de
+olas y la actualización temporal de la altura de cada vértice, siguiendo la
+fórmula de superposición de ondas sinusoidales indicada en los requerimientos
+del laboratorio:
+
+\[
+h(x, z, t) = \sum_{i=1}^{n} A_i \cos\big(k_i (x \cos(d_i) + z \sin(d_i)) - 2\pi f_i t + p_i\big)
+\]
+
+\texttt{Ocean::loadWaves()} lee de \texttt{data/spectrum.txt} la amplitud, la
+dirección y la frecuencia de cada ola (una por línea) y genera una fase
+aleatoria para cada una, tal como permite el enunciado:
+
+\begin{lstlisting}
+bool Ocean::loadWaves(const std::string& filename) {
+    std::ifstream file(filename.c_str());
+    if (!file.is_open()) return false;
+
+    waves.clear();
+    float amplitude, direction, frequency;
+    while (file >> amplitude >> direction >> frequency) {
+        float phase = static_cast<float>(rand()) / RAND_MAX * 2.0f * PI;
+        waves.push_back(Wave(amplitude, frequency, direction, phase));
+    }
+    return !waves.empty();
+}
+\end{lstlisting}
+
+\texttt{Ocean::update(float time)} recorre la malla y evalúa $h(x, z, t)$ sumando
+la contribución de cada ola cargada:
+
+\begin{lstlisting}
+void Ocean::update(float time) {
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            float x = mesh[i][j].x;
+            float z = mesh[i][j].z;
+            float height = 0.0f;
+
+            for (size_t w = 0; w < waves.size(); ++w) {
+                const Wave& wave = waves[w];
+                float k = wave.getWaveNumber();
+                float theta = k * (x * cosf(wave.getDirection()) + z * sinf(wave.getDirection()))
+                              - 2.0f * PI * wave.getFrequency() * time
+                              + wave.getPhase();
+                height += wave.getAmplitude() * cosf(theta);
+            }
+            mesh[i][j].y = height;
+        }
+    }
+    computeNormals();
+}
+\end{lstlisting}
+
+En \texttt{main.cpp} se agregó un \texttt{glutIdleFunc} que avanza el tiempo de
+simulación consultando el reloj de GLUT y solicita el redibujado en cada
+cuadro, logrando la animación continua del oleaje:
+
+\begin{lstlisting}
+void idle() {
+    float time = glutGet(GLUT_ELAPSED_TIME) / 1000.0f;
+    miOceano.update(time);
+    glutPostRedisplay();
+}
+\end{lstlisting}
+
+Adicionalmente se implementó \texttt{Ocean::computeNormals()}, que calcula la
+normal de cada vértice por diferencias centrales de altura respecto a sus
+vecinos en $x$ y $z$. Aún no se usa para iluminación en esta fase, pero deja
+la base lista para la siguiente etapa del proyecto.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{figuras/oceano_animado.png}
+\caption{Superficie del océano deformada por la suma de olas, renderizada en modo alambre con \texttt{update()} activo.}
+\end{figure}
+
 \section{Estado pendiente de esta fase}
 
-Al cierre de esta entrega, las siguientes piezas están declaradas en la interfaz
-pero aún no implementadas (retornan valores por defecto o cuerpos vacíos):
+Con la animación de olas funcionando, lo que queda declarado en la interfaz
+pero aún no implementado corresponde a fases posteriores del proyecto:
 
 \begin{itemize}
-  \item \texttt{Ocean::loadWaves()}: falta parsear \texttt{data/spectrum.txt} y
-        construir el vector de objetos \texttt{Wave}.
-  \item \texttt{Ocean::update(float time)}: falta aplicar la suma de senos de
-        todas las olas cargadas sobre la coordenada $y$ de cada vértice.
-  \item \texttt{main.cpp}: falta un \texttt{glutIdleFunc} o
-        \texttt{glutTimerFunc} que avance el tiempo de simulación y solicite
-        redibujado; actualmente el océano no se anima.
-  \item \texttt{Ocean::loadTexture()} y \texttt{Ocean::computeNormals()}:
-        reservados para las fases de iluminación y texturizado, fuera del
-        alcance de este avance.
+  \item \texttt{Ocean::loadTexture()}: carga y aplicación de la textura
+        \texttt{ocean.tga} sobre la malla usando las coordenadas UV.
+  \item Iluminación y materiales: activar \texttt{GL\_LIGHTING}, definir
+        componentes ambiental/difusa/especular y usar las normales ya
+        calculadas por \texttt{computeNormals()}.
+  \item Cámara interactiva: rotación, zoom y controles de teclado para
+        velocidad de animación, textura e iluminación.
+  \item Elementos adicionales a la escena (mínimo dos): cielo/fondo, barco,
+        isla o similar, integrados con posición, escala e iluminación propias.
 \end{itemize}
-
-Estas piezas conforman el trabajo pendiente para cerrar formalmente la Fase 1.
 
 \section{Conclusiones parciales}
 
-Se cuenta con una arquitectura orientada a objetos clara y con la generación de
-la malla base validada visualmente en modo alambre. El siguiente paso inmediato
-es implementar la carga del espectro de olas y la función de actualización
-temporal para lograr la primera animación visible del oleaje, antes de avanzar
-a iluminación y texturizado en fases posteriores.
+Se cuenta con una arquitectura orientada a objetos clara, la generación de la
+malla base validada visualmente y, en esta entrega, la animación de oleaje
+funcionando de extremo a extremo: carga del espectro de olas desde archivo,
+cálculo de altura por superposición de senos en cada cuadro y cálculo de
+normales por vértice. El siguiente paso es incorporar iluminación, texturizado,
+cámara interactiva y los elementos adicionales de la escena.
 
 \end{document}
+
