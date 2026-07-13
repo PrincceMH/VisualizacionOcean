@@ -1,17 +1,17 @@
-## Compilación y ejecución
+﻿## Compilación y ejecución
 
 ### macOS
 
 ```bash
-g++ -std=c++11 src/main.cpp src/Ocean.cpp src/Wave.cpp -o Oceano -framework OpenGL -framework GLUT -Wno-deprecated-declarations
+g++ -std=c++11 src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp -o Oceano -framework OpenGL -framework GLUT -Wno-deprecated-declarations
 ./Oceano
 ```
 
 ### Windows (MinGW + freeglut)
 
 ```bash
-g++ src/main.cpp src/Ocean.cpp src/Wave.cpp -o Oceano.exe -lopengl32 -lglu32 -lfreeglut
-Oceano.exe
+g++ src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp -o Oceano.exe -lopengl32 -lglu32 -lfreeglut
+./Oceano.exe
 ```
 # Simulación de la Superficie del Océano
 
@@ -33,6 +33,7 @@ Desarrollado en C++ con OpenGL / GLUT.
 | Iluminación (ambiental + difusa + especular) | ✅ Implementado |
 | Material con componente especular (brillos) | ⏳ Pendiente |
 | Mapeo de textura (`ocean.tga`) | ⏳ Pendiente |
+| Cielo con degradado y sol direccional | ✅ Implementado |
 
 ---
 
@@ -58,6 +59,7 @@ ki = 4π² · fi² / 9.81
 - **`Wave`** — Representa una ola individual: amplitud, frecuencia, dirección, fase, y el cálculo de su número de onda `ki`.
 - **`WPoint`** — Representa un vértice de la malla: posición `(x, y, z)`, normal `(nx, ny, nz)` y coordenadas de textura `(s, t)`.
 - **`Ocean`** — Construye la malla, mantiene la lista de olas, actualiza la altura y las normales en cada frame, y dibuja la superficie.
+- **`Environment`** — Dibuja el cielo, el disco solar y configura la luz direccional del sol.
 
 ### Métodos principales de `Ocean`
 
@@ -97,12 +99,16 @@ La fase de cada ola se genera aleatoriamente al cargar el espectro, tal como ind
 OCEANO/
 ├── include/
 │   ├── Ocean.h
+│   ├── Environment.h
 │   ├── Wave.h
 │   └── WPoint.h
 ├── src/
 │   ├── main.cpp
+│   ├── Environment.cpp
 │   ├── Ocean.cpp
 │   └── Wave.cpp
 └── data/
     └── spectrum.txt
 ```
+
+

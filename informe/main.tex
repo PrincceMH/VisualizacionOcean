@@ -1,4 +1,4 @@
-\documentclass[11pt]{article}
+﻿\documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[spanish]{babel}
 \usepackage[margin=2.5cm]{geometry}
@@ -69,7 +69,7 @@ Arequipa --- Perú \\
 Este documento describe el estado actual del proyecto \emph{Sistema de
 Animación de Océano}: una superficie de agua animada mediante superposición
 de ondas sinusoidales, con normales por vértice, iluminación con material
-especular, texturizado real y cámara orbital interactiva. El código fuente y
+especular, texturizado real, cielo con sol y cámara orbital interactiva. El código fuente y
 los recursos están disponibles en el repositorio del grupo:
 
 \begin{center}
@@ -77,7 +77,7 @@ los recursos están disponibles en el repositorio del grupo:
 \end{center}
 
 Quedan pendientes, y se detallan en la Sección~\ref{sec:pendiente}, los
-controles adicionales de teclado y los elementos extra de la escena.
+controles adicionales de teclado, el barco y la entrega final en video.
 
 \section{Organización del proyecto}
 
@@ -88,10 +88,12 @@ VisualizacionOcean/
 |
 +-- src/
 |   +-- main.cpp
+|   +-- Environment.cpp
 |   +-- Ocean.cpp
 |   +-- Wave.cpp
 |
 +-- include/
+|   +-- Environment.h
 |   +-- Ocean.h
 |   +-- Wave.h
 |   +-- WPoint.h
@@ -107,8 +109,10 @@ VisualizacionOcean/
 
 \section{Arquitectura del sistema}
 
-El sistema se organiza en tres clases con responsabilidades separadas, tal
-como sugiere el enunciado del laboratorio.
+El sistema se organiza en clases con responsabilidades separadas, tal
+como sugiere el enunciado del laboratorio. La malla y las olas se mantienen
+independientes del entorno visual para que cada parte pueda modificarse sin
+afectar a las demás.
 \subsection{WPoint --- el vértice}
 
 Unidad básica de la malla. Almacena posición, normal (usada por la
@@ -159,6 +163,23 @@ public:
     void update(float time);
     void computeNormals();
     void draw();
+};
+\end{lstlisting}
+\subsection{Environment --- el entorno visual}
+
+Representa los elementos externos al océano: el cielo, el disco solar y la luz
+principal de la escena. Esta separación evita que \texttt{main.cpp} acumule
+funciones de dibujo y permite que futuros elementos, como un barco o nubes, se
+integren siguiendo el mismo criterio de responsabilidad.
+
+\begin{lstlisting}
+class Environment {
+    float sunX, sunY, sunSize;
+    float sunDirX, sunDirY, sunDirZ;
+public:
+    void initLight() const;
+    void applyLight() const;
+    void draw(int w, int h) const;
 };
 \end{lstlisting}
 
@@ -484,6 +505,48 @@ sola copia sí produce un resultado visiblemente deformado y sí hace falta
 repetirla (\texttt{GL\_REPEAT} con coordenadas mayores a 1) para que se vea
 correcta.
 
+
+\section{Cielo y sol}
+\label{sec:cielo-sol}
+
+Para acercar la escena al resultado de referencia, se agregó una clase
+\texttt{Environment}. Esta clase no modifica la malla del océano: únicamente
+prepara el fondo visual y la luz solar. La decisión mantiene la arquitectura
+ordenada, porque el océano sigue siendo responsable de sus olas, normales y
+textura, mientras que el entorno se encarga de los elementos externos.
+
+El cielo se dibuja como un gradiente en coordenadas de pantalla. Antes de
+dibujarlo se desactivan temporalmente iluminación, textura y prueba de
+profundidad para que actúe como fondo y no interfiera con la superficie del
+agua:
+
+\begin{lstlisting}
+void Environment::draw(int w, int h) const {
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_DEPTH_TEST);
+    glDepthMask(GL_FALSE);
+
+    drawSky(w, h);
+    drawSun(w, h);
+
+    glDepthMask(GL_TRUE);
+}
+\end{lstlisting}
+
+El sol se representa de dos maneras complementarias. Visualmente es un disco
+suave con núcleo y halo difuso, dibujado en 2D para integrarse con el cielo.
+Físicamente, para iluminar el océano, se usa una luz direccional: como el sol
+está muy lejos, sus rayos se aproximan como paralelos y no como una fuente
+puntual cercana.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/oceano_sol_cielo.png}
+\caption{Océano con textura, cielo cálido y sol integrado. El sol visible se
+renderiza como un resplandor 2D, mientras que la iluminación del agua proviene
+de una luz direccional configurada en \texttt{Environment}.}
+\end{figure}
 \section{Cámara interactiva}
 
 \texttt{main.cpp} implementa una cámara orbital con \textbf{coordenadas
@@ -500,9 +563,8 @@ Lo que aún falta para cubrir por completo los requerimientos del enunciado:
 \begin{itemize}
   \item \textbf{Controles de teclado en tiempo real}: aumentar/disminuir la
         velocidad de la animación, y alternar textura e iluminación on/off.
-  \item \textbf{Elementos adicionales de la escena} (mínimo dos, integrados
-        con posición, escala, iluminación y materiales propios): por ejemplo
-        un cielo/fondo, un barco flotando sobre las olas, o el sol.
+  \item \textbf{Elemento adicional restante}: integrar un barco flotando sobre
+        las olas, con posición, escala, iluminación y material propios.
   \item \textbf{Entrega final}: video corto de la animación.
 \end{itemize}
 
@@ -512,8 +574,10 @@ El proyecto cuenta con una arquitectura orientada a objetos clara (Wave,
 WPoint, Ocean), la malla se anima con superposición de ondas sinusoidales
 leídas desde un archivo de espectro, las normales se calculan promediando las
 caras vecinas de cada vértice tal como recomienda el enunciado, y la escena
-ya integra iluminación con material especular, una textura real de agua y una
-cámara orbital interactiva. El trabajo restante es acotado: controles de
-teclado adicionales y los elementos extra de la escena.
+ya integra iluminación con material especular, una textura real de agua, cielo
+con sol y una cámara orbital interactiva. El trabajo restante es acotado:
+controles de teclado adicionales, niebla atmosférica y el barco como elemento
+extra de la escena.
 
 \end{document}
+
