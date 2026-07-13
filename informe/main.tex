@@ -9,6 +9,7 @@
 \usepackage{amsmath}
 \usepackage{float}
 \usepackage{booktabs}
+\usepackage{enumitem}
 
 \definecolor{codebg}{RGB}{245,245,245}
 \lstset{
@@ -35,6 +36,7 @@
 \begin{titlepage}
 \centering
 \vspace*{1cm}
+\includegraphics[width=2.6cm]{figuras/Escudo_UNSA.png}\\[0.5cm]
 {\large\bfseries UNIVERSIDAD NACIONAL DE SAN AGUSTÍN DE AREQUIPA}\\[0.3cm]
 {\bfseries Facultad de Ingeniería de Producción y Servicios}\\
 {\bfseries Escuela Profesional de Ciencia de la Computación}\\[2cm]
@@ -107,7 +109,6 @@ VisualizacionOcean/
 
 El sistema se organiza en tres clases con responsabilidades separadas, tal
 como sugiere el enunciado del laboratorio.
-
 \subsection{WPoint --- el vértice}
 
 Unidad básica de la malla. Almacena posición, normal (usada por la
@@ -195,6 +196,7 @@ topología antes de animarla.}
 \end{figure}
 
 \section{Animación del oleaje}
+\label{sec:animacion-olas}
 
 La altura de cada vértice se recalcula cada cuadro sumando la contribución de
 todas las olas del espectro:
@@ -247,14 +249,37 @@ En \texttt{main.cpp}, un \texttt{glutTimerFunc} avanza el tiempo de simulación
 y solicita el redibujado en cada cuadro (\(\sim\)60 veces por segundo),
 logrando la animación continua.
 
-\section{Cálculo de normales por vértice}
+\section{Iluminación}
+\label{sec:iluminacion}
 
-Para que la iluminación se vea suave sobre la superficie ondulada, cada
-vértice necesita una normal que refleje su inclinación real. Siguiendo la
-recomendación del enunciado, \texttt{computeNormals()} calcula la normal de
-cada triángulo (con el producto vectorial de dos de sus aristas) y la
-\textbf{acumula} en sus tres vértices; al final, cada vértice normaliza el
-promedio de todas las caras que lo tocan:
+Esta sección reúne, de forma justificada, todo lo que hace falta para que el
+océano se vea iluminado de manera realista: primero \emph{por qué} se necesita
+una normal en cada vértice, luego el modelo matemático que OpenGL usa para
+combinar luz y material, y finalmente el código real del proyecto que
+configura ambos. El orden importa: cada pieza depende conceptualmente de la
+anterior.
+
+\subsection{Por qué hace falta una normal en cada vértice}
+\label{sec:normales}
+
+La iluminación de OpenGL (función fija) no ``sabe'' que la superficie es un
+océano ondulado: solo sabe, para cada vértice, un vector llamado
+\textbf{normal} que indica hacia dónde mira ese punto de la superficie. Sin
+ese dato, es imposible calcular si el vértice está de frente a la luz o de
+canto, y por lo tanto tampoco cuánta luz recibe.
+
+En una malla \emph{plana} la normal sería siempre $(0,1,0)$ para todos los
+puntos. Pero aquí la altura de cada vértice cambia constantemente
+(Sección~\ref{sec:animacion-olas}), así que la superficie está inclinada de
+forma distinta en cada punto y en cada instante; la normal debe
+\textbf{recalcularse cada cuadro}, junto con la altura.
+
+\texttt{Ocean::computeNormals()} calcula la normal de cada triángulo de la
+malla con el \textbf{producto vectorial} de dos de sus aristas
+($\vec n_{\triangle} = \vec e_1 \times \vec e_2$), y la \textbf{acumula} en
+sus tres vértices; como cada vértice es compartido por varios triángulos
+vecinos, al final se \textbf{normaliza el promedio} acumulado. Esta es
+exactamente la técnica que recomienda el enunciado del proyecto:
 
 \begin{lstlisting}
 void Ocean::computeNormals() {
@@ -266,11 +291,58 @@ void Ocean::computeNormals() {
 }
 \end{lstlisting}
 
-\section{Iluminación y materiales}
+\begin{quote}
+\textbf{Por qué promediar y no dejar la normal de una sola cara.} Si cada
+triángulo usara únicamente su propia normal, la transición entre triángulos
+vecinos sería abrupta y la superficie se vería facetada, como un cristal
+tallado en vez de agua. Promediar las normales de las caras que rodean a cada
+vértice suaviza esa transición: el resultado es un degradado continuo de luz
+sobre la superficie, aunque por debajo la malla siga siendo un conjunto de
+triángulos planos.
+\end{quote}
 
-En \texttt{main.cpp}, \texttt{initLuzYMaterial()} activa el sistema de
-iluminación de OpenGL y define, tanto para la luz como para el material del
-agua, sus tres componentes (ambiental, difusa y especular):
+\subsection{El modelo de iluminación: Phong / Blinn-Phong}
+
+Con la normal ya disponible, OpenGL calcula el color final de cada vértice
+combinando tres contribuciones de luz --ambiental, difusa y especular-- cada
+una resultado de multiplicar la componente de la \textbf{luz} por la
+componente equivalente del \textbf{material}:
+
+\[
+I_{\text{total}} = \underbrace{k_a \, L_a}_{\text{ambiental}} \; + \;
+\underbrace{k_d \, L_d \, (\hat N \cdot \hat L)}_{\text{difusa}} \; + \;
+\underbrace{k_s \, L_s \, (\hat N \cdot \hat H)^{\,\text{shininess}}}_{\text{especular}}
+\]
+
+donde $\hat N$ es la normal del vértice, $\hat L$ es la dirección hacia la
+luz, y $\hat H$ es el \textbf{vector medio} entre la dirección hacia la luz y
+la dirección hacia la cámara, $\hat H = \widehat{\hat L + \hat V}$ (el modelo
+de iluminación de función fija de OpenGL usa esta variante, llamada
+\emph{Blinn-Phong}, en lugar del vector de reflexión especular puro; es
+matemáticamente más barata y visualmente casi idéntica).
+
+\begin{description}[leftmargin=1.2em]
+  \item[Ambiental ($k_a L_a$):] no depende de ningún ángulo; es una luz de
+        relleno constante, la razón por la que los valles de las olas nunca
+        quedan completamente negros.
+  \item[Difusa ($k_d L_d (\hat N \cdot \hat L)$):] depende del \textbf{ángulo
+        entre la normal y la luz}. El producto punto $\hat N \cdot \hat L$ es
+        máximo (=1) cuando la superficie mira directo a la luz, y decrece a
+        medida que se inclina; esto es lo que da \textbf{volumen} a la
+        superficie ondulada.
+  \item[Especular ($k_s L_s (\hat N \cdot \hat H)^{\text{shininess}}$):] el
+        brillo puntual y concentrado. Es máximo solo cuando la normal apunta
+        casi exactamente a mitad de camino entre la luz y la cámara; el
+        exponente \texttt{shininess} controla qué tan concentrado (vs.
+        disperso) se ve ese reflejo.
+\end{description}
+
+\subsection{Configuración real en el proyecto: luz y material}
+
+\texttt{initLuzYMaterial()}, en \texttt{main.cpp}, activa el sistema de
+iluminación de OpenGL y define las tres componentes ($L_a, L_d, L_s$) de la
+luz y las tres componentes ($k_a, k_d, k_s$) del material del agua, además
+del exponente de brillo:
 
 \begin{lstlisting}
 void initLuzYMaterial() {
@@ -296,9 +368,68 @@ void initLuzYMaterial() {
 }
 \end{lstlisting}
 
+\texttt{GL\_NORMALIZE} es una salvaguarda necesaria por la forma en que se
+calculan las normales: como \texttt{computeNormals()} \textbf{acumula} varias
+normales antes de dividir por su promedio, un vector intermedio podría no
+tener longitud exactamente 1 al llegar a la etapa de iluminación. Con
+\texttt{GL\_NORMALIZE} activo, OpenGL renormaliza cualquier normal antes de
+usarla en la fórmula de Phong; sin esto, el resultado de $\hat N \cdot \hat L$
+quedaría mal escalado y la superficie se vería más oscura o más clara de lo
+que corresponde.
+
 La posición de la luz se actualiza en \texttt{display()} \emph{después} de
-\texttt{gluLookAt}, de modo que queda anclada al mundo y no se mueve al
-orbitar la cámara.
+\texttt{gluLookAt}:
+
+\begin{lstlisting}
+gluLookAt(ex, ey, ez,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0);
+
+// Actualiza posicion de luz despues de gluLookAt (anclada al mundo)
+GLfloat posicionLuz[] = { 10.0f, 15.0f, 10.0f, 1.0f };
+glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
+\end{lstlisting}
+
+\begin{quote}
+\textbf{Por qué en ese orden.} La posición de una luz se ve afectada por la
+transformación de vista vigente en el momento en que se define (igual que
+cualquier otro punto que se pasa a OpenGL). Fijarla \emph{después} de
+\texttt{gluLookAt} la deja anclada al \textbf{mundo}: un sol fijo que no se
+mueve al orbitar la cámara. Fijarla antes la dejaría pegada a la cámara, como
+una linterna en la cabeza del observador.
+\end{quote}
+
+\subsection{Evidencia visual: el brillo especular}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/oceano_solo_iluminacion.png}
+\caption{Océano con geometría e iluminación, \emph{sin} textura (capturado
+desactivando temporalmente \texttt{glEnable(GL\_TEXTURE\_2D)} en
+\texttt{Ocean::draw()}). Se distinguen dos manchas de brillo especular: una
+grande en el centro y otra más pequeña arriba a la derecha, cada una sobre
+una cresta distinta de la superficie.}
+\end{figure}
+
+\textbf{Por qué el brillo aparece en esos dos puntos y no en toda la
+superficie.} Según la fórmula especular de la sección anterior, el reflejo
+solo se enciende con fuerza donde $\hat N \cdot \hat H \approx 1$, es decir,
+donde la normal local coincide con el vector medio entre la luz y la cámara.
+Como la normal de cada vértice apunta en una dirección distinta según la
+inclinación local de la ola, solo las crestas orientadas ``justo hacia'' esa
+combinación luz-cámara producen el reflejo brillante; el resto de la
+superficie recibe la misma luz pero en un ángulo que aleja $\hat H$ de
+$\hat N$, y por eso se ve con el tono difuso azul, más apagado. Este efecto es
+completamente dependiente de la normal calculada en la
+Sección~\ref{sec:normales}: sin normales correctas (o sin normalizar) el
+brillo aparecería disperso o en el lugar equivocado.
+
+\textbf{Por qué hay dos manchas y no una sola.} Con una única ola habría un
+solo punto de brillo (como en una esfera lisa). Aquí el océano es la
+\textbf{suma de varias ondas sinusoidales} con direcciones distintas
+(Sección~\ref{sec:animacion-olas}), así que existen varias crestas locales con
+orientaciones distintas; cada una que ``mira'' hacia la combinación correcta
+de luz y cámara genera su propio punto de brillo independiente. El número y
+la posición de estos brillos cambian cuadro a cuadro porque las crestas se
+mueven con la animación del oleaje.
 
 \section{Texturizado}
 
@@ -328,6 +459,30 @@ posición (\texttt{glTexCoord2f} antes de \texttt{glVertex3f}), y
 \texttt{GL\_MODULATE} combina el color de la textura con el resultado de la
 iluminación, de forma que el agua se ve iluminada \emph{y} con su patrón
 visual a la vez.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/oceano_texturizado.png}
+\caption{Océano con textura, normales e iluminación combinadas. La forma
+general de las olas la aporta la \textbf{geometría} (la malla deformada por
+\texttt{update()}); el detalle fino de espuma y reflejos lo aporta la
+\textbf{textura} (\texttt{ocean.tga}); y el contraste entre la cresta
+iluminada y los valles en sombra lo aporta la \textbf{iluminación}, que usa
+las normales calculadas por \texttt{computeNormals()} para saber cuánta luz
+recibe cada punto de la superficie.}
+\end{figure}
+
+\textbf{Por qué la imagen no se ve estirada.} Aunque las coordenadas $(s,t)$ de
+cada vértice van de $0$ a $1$ sobre \emph{toda} la malla, la imagen de
+\texttt{ocean.tga} ya contiene en sí misma un patrón de espuma a muchas
+escalas (grande y fino a la vez). Por eso una sola copia, estirada sobre el
+océano completo, sigue leyéndose como agua real: el detalle no depende de
+repetir la textura en mosaico, sino de que la fotografía original ya trae
+variación a distintas frecuencias espaciales. Esto contrasta con una textura
+de patrón simple y regular (como el ladrillo del Lab~9), donde estirar una
+sola copia sí produce un resultado visiblemente deformado y sí hace falta
+repetirla (\texttt{GL\_REPEAT} con coordenadas mayores a 1) para que se vea
+correcta.
 
 \section{Cámara interactiva}
 
