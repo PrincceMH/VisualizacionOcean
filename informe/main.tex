@@ -1,98 +1,364 @@
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{booktabs}
 
-% CREACIÓN DEL DOCUMENTO, FUENTE E IDIOMA
-\documentclass[a4paper,11pt,hidelinks]{article} 
-\usepackage[utf8]{inputenc}               % Codificación UTF-8
-\usepackage[T1]{fontenc}                  % Soporta caracteres acentuados
-\usepackage{lmodern}                      % Tipografía moderna
-\usepackage[spanish]{babel}               % Idioma del documento en español
-\def\templateversion{3.1.3}               % Versión del template
-               
-% INFORMACIÓN DEL DOCUMENTO
-\newcommand{\nombredelinforme}{Sistema de Animación de Océano}
-\newcommand{\temaatratar}{Avance \#1}
-\newcommand{\fecharealizacion}{\today}
-\newcommand{\fechaentrega}{\today}
+\definecolor{codebg}{RGB}{245,245,245}
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  language=C++,
+  columns=fullflexible,
+  showstringspaces=false
+}
 
-\newcommand{\nombredelcurso}{Computación Gráfica}
-\newcommand{\nombredelprofesor}{Percy Maldonado Quispe}
+\title{Proyecto Final \\ \large Sistema de Animación de Océano}
+\author{
+  Princce Yorwin Mariños Hilario \\
+  Gleddynuri Marbel Picha Chañi \\
+  Wilson Ramos Pacco \\
+  Postigo Cabana Juan Carlos
+}
+\date{Arequipa --- Perú \\ 2026}
 
-\newcommand{\nombreuniversidad}{Universidad Nacional de San Agustín}
-\newcommand{\nombrefacultad}{Facultad de Ingeniería de Producción y Servicios}
-\newcommand{\departamentouniversidad}{Escuela Profesional de Ciencia de la Computación}
-\newcommand{\imagendeldepartamento}{resources/logos/unsa}
-\newcommand{\imagendeldepartamentoescl}{0.14}
-\newcommand{\localizacionuniversidad}{Arequipa, Perú}
-
-% INTEGRANTES, PROFESORES Y FECHAS
-\newcommand{\tablaintegrantes}{
-\begin{minipage}{0.92\textwidth}
-
-\begin{center}
-\begin{tabular}{rc}
-
-	\vspace{0.2 cm}
-	\textbf{Autores:}
-		& \begin{tabular}[t]{@{}c@{}}
-			\large {Princce Yorwin Mariños Hilario}\\
-			\large {Gleddynuri Marbel Picha Chañi}\\
-			\large {Wilson Ramos Pacco}\\
-			\large {Juan Carlos Postigo Cabana}\\
-			%
-		\end{tabular} \\
-	\vspace{0.2 cm}
-	\textbf{Profesor:}
-		& \begin{tabular}[t]{@{}c@{}}
-			\large {{\nombredelprofesor}} \\
-		\end{tabular} \\
-	\textbf{Curso:}
-		& \begin{tabular}[t]{@{}c@{}}
-			\large {\nombredelcurso}\\\\
-		\end{tabular} \\
-	\multicolumn{2}{c}{\Large {\fechaentrega}} \\
-	\multicolumn{2}{c}{\Large {\localizacionuniversidad}}
-\end{tabular}
-\end{center}
-\end{minipage}}
-
-% CONFIGURACIONES
-\input{lib/config}
-
-% IMPORTACIÓN DE LIBRERÍAS
-\input{lib/imports}
-
-% IMPORTACIÓN DE FUNCIONES
-\input{lib/functions}
-
-% IMPORTACIÓN DE FUNCIONES
-\input{lib/comandos}
-
-% IMPORTACIÓN DE AMBIENTES Y ESTILOS
-\input{lib/styles}
-
-% CONFIGURACIÓN INICIAL DEL DOCUMENTO
-\input{lib/initconf}
-
-% PORTADA
 \begin{document}
 
-\input{lib/portrait}
-% CONFIGURACIÓN DE PÁGINA Y ENCABEZADOS
-\input{lib/pageconf}
+\begin{titlepage}
+\centering
+\vspace*{1cm}
+{\large\bfseries UNIVERSIDAD NACIONAL DE SAN AGUSTÍN DE AREQUIPA}\\[0.3cm]
+{\bfseries Facultad de Ingeniería de Producción y Servicios}\\
+{\bfseries Escuela Profesional de Ciencia de la Computación}\\[2cm]
 
-% CONFIGURACIONES FINALES - INICIO DE LAS SECCIONES
-\input{lib/finalconf}
+\vspace{1cm}
+{\Huge\bfseries Proyecto Final}\\[1cm]
 
-\vspace*{\fill}
+\vspace{2cm}
+\begin{flushleft}
+\textbf{Docente:} Percy Maldonado Quispe \\[0.5cm]
+\textbf{Alumnos:} \\
+Princce Yorwin Mariños Hilario \\
+Gleddynuri Marbel Picha Chañi \\
+Wilson Ramos Pacco \\
+Postigo Cabana Juan Carlos
+\end{flushleft}
+
+\vfill
+\centering
+Curso: Computación Gráfica \\
+Arequipa --- Perú \\
+2026
+\end{titlepage}
+
 \tableofcontents
-\vspace*{\fill}
 \newpage
 
-% ======================== INICIO DEL DOCUMENTO ========================
-% RESUMEN O ABSTRACT
-\input{avance01}
+\section{Introducción y alcance}
 
-% \input{body} % Se incluye el ejemplo del documento, se puede borrar
+Este documento describe el estado actual del proyecto \emph{Sistema de
+Animación de Océano}: una superficie de agua animada mediante superposición
+de ondas sinusoidales, con normales por vértice, iluminación con material
+especular, texturizado real y cámara orbital interactiva. El código fuente y
+los recursos están disponibles en el repositorio del grupo:
 
+\begin{center}
+    \url{https://github.com/PrincceMH/VisualizacionOcean}
+\end{center}
 
-% FIN DEL DOCUMENTO
+Quedan pendientes, y se detallan en la Sección~\ref{sec:pendiente}, los
+controles adicionales de teclado y los elementos extra de la escena.
+
+\section{Organización del proyecto}
+
+El código se organiza separando fuentes, cabeceras y recursos:
+
+\begin{lstlisting}[language=bash]
+VisualizacionOcean/
+|
++-- src/
+|   +-- main.cpp
+|   +-- Ocean.cpp
+|   +-- Wave.cpp
+|
++-- include/
+|   +-- Ocean.h
+|   +-- Wave.h
+|   +-- WPoint.h
+|   +-- stb_image.h      (carga de imagenes de textura)
+|
++-- assets/
+|   +-- textures/
+|       +-- ocean.tga
+|
++-- data/
+    +-- spectrum.txt      (espectro de olas: amplitud, direccion, frecuencia)
+\end{lstlisting}
+
+\section{Arquitectura del sistema}
+
+El sistema se organiza en tres clases con responsabilidades separadas, tal
+como sugiere el enunciado del laboratorio.
+
+\subsection{WPoint --- el vértice}
+
+Unidad básica de la malla. Almacena posición, normal (usada por la
+iluminación) y coordenadas de textura UV.
+
+\begin{lstlisting}
+struct WPoint {
+    float x, y, z;       // Posicion en el espacio
+    float nx, ny, nz;    // Vector normal
+    float s, t;          // Coordenadas de textura UV
+};
+\end{lstlisting}
+
+\subsection{Wave --- la ola}
+
+Encapsula los parámetros físicos de una ola individual: amplitud, frecuencia,
+dirección y fase. Provee el cálculo del número de onda $k$, necesario para la
+fórmula de desplazamiento (ondas de aguas profundas):
+
+\[
+k = \frac{4\pi^2 f^2}{g}, \qquad g = 9.81 \; \text{m/s}^2
+\]
+
+\begin{lstlisting}
+class Wave {
+    float amplitude, frequency, direction, phase;
+public:
+    Wave(float amp, float freq, float dir, float ph);
+    float getWaveNumber() const; // Calcula k
+};
+\end{lstlisting}
+
+\subsection{Ocean --- el controlador}
+
+Administra la malla 2D de vértices, la lista de olas, el identificador de la
+textura de OpenGL y las operaciones de ciclo de vida: inicialización,
+actualización de altura, cálculo de normales, carga de textura y dibujo.
+
+\begin{lstlisting}
+class Ocean {
+    std::vector<std::vector<WPoint>> mesh;
+    std::vector<Wave> waves;
+    unsigned int textureID;
+public:
+    void initMesh();
+    bool loadWaves(const std::string& filename);
+    bool loadTexture(const std::string& filename);
+    void update(float time);
+    void computeNormals();
+    void draw();
+};
+\end{lstlisting}
+
+\section{Generación de la malla base}
+
+La malla se construye sobre el plano $XZ$, centrada dinámicamente respecto al
+origen. Cada vértice guarda también su coordenada de textura $(s,t)$,
+proporcional a su posición en la rejilla ($0$ a $1$), lista para usarse en el
+texturizado:
+
+\begin{lstlisting}
+void Ocean::initMesh() {
+    mesh.resize(rows, std::vector<WPoint>(cols));
+
+    float startX = -((cols - 1) * spacing) / 2.0f;
+    float startZ = -((rows - 1) * spacing) / 2.0f;
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            mesh[i][j].x = startX + j * spacing;
+            mesh[i][j].y = 0.0f;
+            mesh[i][j].z = startZ + i * spacing;
+            mesh[i][j].s = (float)j / (cols - 1);
+            mesh[i][j].t = (float)i / (rows - 1);
+        }
+    }
+}
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{figuras/malla_plana_alambre.png}
+\caption{Malla base plana renderizada en modo alambre, usada para validar la
+topología antes de animarla.}
+\end{figure}
+
+\section{Animación del oleaje}
+
+La altura de cada vértice se recalcula cada cuadro sumando la contribución de
+todas las olas del espectro:
+
+\[
+h(x, z, t) = \sum_{i=1}^{n} A_i \cos\big(k_i (x \cos(d_i) + z \sin(d_i)) - 2\pi f_i t + p_i\big)
+\]
+
+\texttt{Ocean::loadWaves()} lee amplitud, dirección y frecuencia de cada ola
+desde \texttt{data/spectrum.txt} (una por línea) y genera una fase aleatoria
+para cada una. Si el archivo no se encuentra, se usan olas por defecto para
+que la simulación no quede plana:
+
+\begin{lstlisting}
+bool Ocean::loadWaves(const std::string& filename) {
+    // busca el archivo en varias rutas relativas posibles...
+    if (!file.is_open()) {
+        waves.push_back(Wave(0.5f, 0.15f, 30.0f * PI/180.0f, 0.0f));
+        waves.push_back(Wave(0.3f, 0.25f, 90.0f * PI/180.0f, 60.0f * PI/180.0f));
+        waves.push_back(Wave(0.2f, 0.40f, 150.0f * PI/180.0f, 120.0f * PI/180.0f));
+        return false;
+    }
+    // ... si abre el archivo, carga amplitud/direccion/frecuencia por linea
+    // y genera una fase aleatoria para cada ola
+}
+\end{lstlisting}
+
+\texttt{Ocean::update(float time)} recorre la malla y evalúa $h(x,z,t)$; al
+final llama a \texttt{computeNormals()} para que las normales queden al día
+con la nueva forma de la superficie:
+
+\begin{lstlisting}
+void Ocean::update(float time) {
+    for (int i = 0; i < rows; ++i)
+        for (int j = 0; j < cols; ++j) {
+            float height = 0.0f;
+            for (const Wave& wave : waves) {
+                float k = wave.getWaveNumber();
+                float theta = k * (x*cosf(wave.getDirection()) + z*sinf(wave.getDirection()))
+                              - 2.0f * PI * wave.getFrequency() * time + wave.getPhase();
+                height += wave.getAmplitude() * cosf(theta);
+            }
+            mesh[i][j].y = height;
+        }
+    computeNormals();
+}
+\end{lstlisting}
+
+En \texttt{main.cpp}, un \texttt{glutTimerFunc} avanza el tiempo de simulación
+y solicita el redibujado en cada cuadro (\(\sim\)60 veces por segundo),
+logrando la animación continua.
+
+\section{Cálculo de normales por vértice}
+
+Para que la iluminación se vea suave sobre la superficie ondulada, cada
+vértice necesita una normal que refleje su inclinación real. Siguiendo la
+recomendación del enunciado, \texttt{computeNormals()} calcula la normal de
+cada triángulo (con el producto vectorial de dos de sus aristas) y la
+\textbf{acumula} en sus tres vértices; al final, cada vértice normaliza el
+promedio de todas las caras que lo tocan:
+
+\begin{lstlisting}
+void Ocean::computeNormals() {
+    // 1) reiniciar el acumulador de cada vertice a cero
+    // 2) por cada triangulo de la malla:
+    //      normal_de_cara = (arista1) x (arista2)   [producto cruz]
+    //      se suma esa normal a sus 3 vertices
+    // 3) cada vertice normaliza su acumulado (el promedio de sus caras vecinas)
+}
+\end{lstlisting}
+
+\section{Iluminación y materiales}
+
+En \texttt{main.cpp}, \texttt{initLuzYMaterial()} activa el sistema de
+iluminación de OpenGL y define, tanto para la luz como para el material del
+agua, sus tres componentes (ambiental, difusa y especular):
+
+\begin{lstlisting}
+void initLuzYMaterial() {
+    glEnable(GL_LIGHTING);
+    glEnable(GL_LIGHT0);
+    glEnable(GL_NORMALIZE);
+
+    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };
+    GLfloat luzDifusa[]     = { 0.85f, 0.85f, 0.80f, 1.0f };
+    GLfloat luzEspecular[]  = { 0.50f, 0.50f, 0.52f, 1.0f };
+    glLightfv(GL_LIGHT0, GL_AMBIENT,  luzAmbiental);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE,  luzDifusa);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+
+    // Material del oceano: azul profundo, con brillo especular moderado
+    GLfloat waterAmbient[]  = { 0.05f, 0.10f, 0.15f, 1.0f };
+    GLfloat waterDiffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
+    GLfloat waterSpecular[] = { 0.45f, 0.52f, 0.58f, 1.0f };
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  waterAmbient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,  waterDiffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, waterSpecular);
+    glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, 48.0f);
+}
+\end{lstlisting}
+
+La posición de la luz se actualiza en \texttt{display()} \emph{después} de
+\texttt{gluLookAt}, de modo que queda anclada al mundo y no se mueve al
+orbitar la cámara.
+
+\section{Texturizado}
+
+La superficie se texturiza con una imagen real de agua
+(\texttt{assets/textures/ocean.tga}), cargada con la librería de una sola
+cabecera \texttt{stb\_image.h}:
+
+\begin{lstlisting}
+bool Ocean::loadTexture(const std::string& filename) {
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    stbi_set_flip_vertically_on_load(true);
+    unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
+    GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    stbi_image_free(data);
+}
+\end{lstlisting}
+
+Al dibujar, cada vértice emite su coordenada de textura junto con su normal y
+posición (\texttt{glTexCoord2f} antes de \texttt{glVertex3f}), y
+\texttt{GL\_MODULATE} combina el color de la textura con el resultado de la
+iluminación, de forma que el agua se ve iluminada \emph{y} con su patrón
+visual a la vez.
+
+\section{Cámara interactiva}
+
+\texttt{main.cpp} implementa una cámara orbital con \textbf{coordenadas
+esféricas} (radio, ángulo horizontal y vertical), igual que en los
+laboratorios previos del curso: arrastrar el ratón cambia los ángulos, y las
+teclas \texttt{+}/\texttt{-} acercan o alejan la cámara. La posición
+resultante se pasa a \texttt{gluLookAt} en cada cuadro.
+
+\section{Estado pendiente}
+\label{sec:pendiente}
+
+Lo que aún falta para cubrir por completo los requerimientos del enunciado:
+
+\begin{itemize}
+  \item \textbf{Controles de teclado en tiempo real}: aumentar/disminuir la
+        velocidad de la animación, y alternar textura e iluminación on/off.
+  \item \textbf{Elementos adicionales de la escena} (mínimo dos, integrados
+        con posición, escala, iluminación y materiales propios): por ejemplo
+        un cielo/fondo, un barco flotando sobre las olas, o el sol.
+  \item \textbf{Entrega final}: video corto de la animación.
+\end{itemize}
+
+\section{Conclusiones parciales}
+
+El proyecto cuenta con una arquitectura orientada a objetos clara (Wave,
+WPoint, Ocean), la malla se anima con superposición de ondas sinusoidales
+leídas desde un archivo de espectro, las normales se calculan promediando las
+caras vecinas de cada vértice tal como recomienda el enunciado, y la escena
+ya integra iluminación con material especular, una textura real de agua y una
+cámara orbital interactiva. El trabajo restante es acotado: controles de
+teclado adicionales y los elementos extra de la escena.
+
 \end{document}
