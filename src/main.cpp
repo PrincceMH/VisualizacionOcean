@@ -20,9 +20,9 @@ int lastX = 0, lastY = 0;
 float simTime = 0.0f;
 
 void initWaterMaterial() {
-    GLfloat ambient[]  = { 0.05f, 0.10f, 0.15f, 1.0f };
-    GLfloat diffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
-    GLfloat specular[] = { 0.45f, 0.52f, 0.58f, 1.0f };
+    GLfloat ambient[]  = { 0.10f, 0.20f, 0.28f, 1.0f };
+    GLfloat diffuse[]  = { 0.25f, 0.55f, 0.75f, 1.0f };
+    GLfloat specular[] = { 0.55f, 0.62f, 0.68f, 1.0f };
 
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
