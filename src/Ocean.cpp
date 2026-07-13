@@ -150,27 +150,25 @@ bool Ocean::loadWaves(const std::string& filename) {
 }
 
 bool Ocean::loadTexture(const std::string& filename) {
-    // 1. Generar un ID para la textura en OpenGL
+    // Generar un ID para la textura en OpenGL
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_2D, textureID);
 
-    // 2. Configurar cómo se repetira la textura (ideal para el oceano)
+    // Configurar como se repetira la textura
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     
-    // 3. Configurar el filtrado para evitar que se vea muy pixeleado
+    // Configurar el filtrado para evitar que se vea muy pixeleado
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    // 4. Cargar la imagen con stb_image
+    // Cargar la imagen con stb_image
     int width, height, nrChannels;
-    // TGA suele tener la imagen invertida verticalmente, esto lo corrige:
     stbi_set_flip_vertically_on_load(true); 
     
     unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrChannels, 0);
     
     if (data) {
-        // Determinar si la imagen tiene canal Alfa (transparencia) o solo RGB
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
         
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
