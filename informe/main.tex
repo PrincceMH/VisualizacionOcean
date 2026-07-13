@@ -360,32 +360,36 @@ matemáticamente más barata y visualmente casi idéntica).
 
 \subsection{Configuración real en el proyecto: luz y material}
 
-\texttt{initLuzYMaterial()}, en \texttt{main.cpp}, activa el sistema de
-iluminación de OpenGL y define las tres componentes ($L_a, L_d, L_s$) de la
-luz y las tres componentes ($k_a, k_d, k_s$) del material del agua, además
-del exponente de brillo:
+La configuración se separó en dos responsabilidades. \texttt{Environment}
+activa y define la luz solar, mientras que \texttt{main.cpp} conserva el
+material del agua. Así, el sol pertenece al entorno y el océano mantiene su
+propio comportamiento visual:
 
 \begin{lstlisting}
-void initLuzYMaterial() {
+void Environment::initLight() const {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
 
-    GLfloat luzAmbiental[]  = { 0.25f, 0.25f, 0.28f, 1.0f };
-    GLfloat luzDifusa[]     = { 0.85f, 0.85f, 0.80f, 1.0f };
-    GLfloat luzEspecular[]  = { 0.50f, 0.50f, 0.52f, 1.0f };
-    glLightfv(GL_LIGHT0, GL_AMBIENT,  luzAmbiental);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE,  luzDifusa);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, luzEspecular);
+    GLfloat ambient[]  = { 0.24f, 0.22f, 0.26f, 1.0f };
+    GLfloat diffuse[]  = { 0.95f, 0.88f, 0.70f, 1.0f };
+    GLfloat specular[] = { 0.70f, 0.68f, 0.62f, 1.0f };
 
-    // Material del oceano: azul profundo, con brillo especular moderado
-    GLfloat waterAmbient[]  = { 0.05f, 0.10f, 0.15f, 1.0f };
-    GLfloat waterDiffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
-    GLfloat waterSpecular[] = { 0.45f, 0.52f, 0.58f, 1.0f };
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT,  waterAmbient);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE,  waterDiffuse);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, waterSpecular);
-    glMaterialf (GL_FRONT_AND_BACK, GL_SHININESS, 48.0f);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, specular);
+    applyLight();
+}
+
+void initWaterMaterial() {
+    GLfloat ambient[]  = { 0.05f, 0.10f, 0.15f, 1.0f };
+    GLfloat diffuse[]  = { 0.10f, 0.35f, 0.55f, 1.0f };
+    GLfloat specular[] = { 0.45f, 0.52f, 0.58f, 1.0f };
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, ambient);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, diffuse);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specular);
+    glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 48.0f);
 }
 \end{lstlisting}
 
@@ -398,24 +402,29 @@ usarla en la fórmula de Phong; sin esto, el resultado de $\hat N \cdot \hat L$
 quedaría mal escalado y la superficie se vería más oscura o más clara de lo
 que corresponde.
 
-La posición de la luz se actualiza en \texttt{display()} \emph{después} de
+La dirección de la luz se aplica en \texttt{display()} \emph{después} de
 \texttt{gluLookAt}:
 
 \begin{lstlisting}
-gluLookAt(ex, ey, ez,  0.0, 0.0, 0.0,  0.0, 1.0, 0.0);
+gluLookAt(ex, ey, ez, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+environment.applyLight();
+\end{lstlisting}
 
-// Actualiza posicion de luz despues de gluLookAt (anclada al mundo)
-GLfloat posicionLuz[] = { 10.0f, 15.0f, 10.0f, 1.0f };
-glLightfv(GL_LIGHT0, GL_POSITION, posicionLuz);
+Dentro de \texttt{Environment::applyLight()} el cuarto componente vale $0$,
+por lo que OpenGL interpreta la luz como direccional, apropiada para representar
+un sol lejano:
+
+\begin{lstlisting}
+GLfloat sunDir[] = { sunDirX, sunDirY, sunDirZ, 0.0f };
+glLightfv(GL_LIGHT0, GL_POSITION, sunDir);
 \end{lstlisting}
 
 \begin{quote}
-\textbf{Por qué en ese orden.} La posición de una luz se ve afectada por la
-transformación de vista vigente en el momento en que se define (igual que
-cualquier otro punto que se pasa a OpenGL). Fijarla \emph{después} de
-\texttt{gluLookAt} la deja anclada al \textbf{mundo}: un sol fijo que no se
-mueve al orbitar la cámara. Fijarla antes la dejaría pegada a la cámara, como
-una linterna en la cabeza del observador.
+\textbf{Por qué en ese orden.} La dirección de una luz se ve afectada por la
+transformación de vista vigente en el momento en que se define. Aplicarla
+\emph{después} de \texttt{gluLookAt} la deja coherente con el mundo de la escena:
+un sol fijo que no se pega a la cámara cuando el usuario orbita alrededor del
+océano.
 \end{quote}
 
 \subsection{Evidencia visual: el brillo especular}
@@ -547,6 +556,7 @@ puntual cercana.
 renderiza como un resplandor 2D, mientras que la iluminación del agua proviene
 de una luz direccional configurada en \texttt{Environment}.}
 \end{figure}
+
 \section{Cámara interactiva}
 
 \texttt{main.cpp} implementa una cámara orbital con \textbf{coordenadas
@@ -571,7 +581,7 @@ Lo que aún falta para cubrir por completo los requerimientos del enunciado:
 \section{Conclusiones parciales}
 
 El proyecto cuenta con una arquitectura orientada a objetos clara (Wave,
-WPoint, Ocean), la malla se anima con superposición de ondas sinusoidales
+WPoint, Ocean y Environment), la malla se anima con superposición de ondas sinusoidales
 leídas desde un archivo de espectro, las normales se calculan promediando las
 caras vecinas de cada vértice tal como recomienda el enunciado, y la escena
 ya integra iluminación con material especular, una textura real de agua, cielo
@@ -580,4 +590,5 @@ controles de teclado adicionales, niebla atmosférica y el barco como elemento
 extra de la escena.
 
 \end{document}
+
 
