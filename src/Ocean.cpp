@@ -259,6 +259,20 @@ void Ocean::update(float time) {
     computeNormals();
 }
 
+float Ocean::getHeightAt(float x, float z, float time) const {
+    float height = 0.0f;
+    for (size_t w = 0; w < waves.size(); ++w) {
+        const Wave& wave = waves[w];
+        float k = wave.getWaveNumber();
+        float theta = k * (x * cosf(wave.getDirection()) + z * sinf(wave.getDirection()))
+                      - 2.0f * PI * wave.getFrequency() * time
+                      + wave.getPhase();
+        height += wave.getAmplitude() * cosf(theta);
+    }
+    return height;
+}
+
+
 // Calcula la normal de cada vertice promediando las normales de las caras
 // (triangulos) que lo tocan
 void Ocean::computeNormals() {
