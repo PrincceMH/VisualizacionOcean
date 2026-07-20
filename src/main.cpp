@@ -8,6 +8,9 @@
 #include <iostream>
 #include "../include/Ocean.h"
 #include "../include/Environment.h"
+#include "../include/Boat.h"
+#include "../include/Island.h"
+#include "../include/Lighthouse.h"
 
 static const float PI = 3.14159265f;
 
@@ -16,6 +19,11 @@ static const float PI = 3.14159265f;
 // niebla lo funde uniforme y el mar parece infinito (sin esquinas al orbitar).
 Ocean ocean(80, 200, 50.0f);
 Environment environment;
+Boat boat(2.0f, 3.0f, 7.5f, 2.6f, 1.4f);
+
+Island island(0.0f, -20.0f, 24.0f, 9.0f, 4.0f, 16, 64, 0.3f, 11);
+
+Lighthouse lighthouse(island.getCenterX(), island.getPeakHeight(), island.getCenterZ());
 
 int winW = 800, winH = 600;
 float camRadius = 25.0f, camTheta = 35.0f, camPhi = 25.0f;
@@ -81,6 +89,9 @@ void display() {
     glEnable(GL_FOG);
     ocean.draw();
     glDisable(GL_FOG);
+    island.draw();
+    lighthouse.draw();
+    boat.draw(ocean, simTime);
 
     glutSwapBuffers();
 }
