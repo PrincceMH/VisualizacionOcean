@@ -92,15 +92,22 @@ void Ocean::drawTriangles() {
             const WPoint& p01 = mesh[i][j + 1];
             const WPoint& p11 = mesh[i + 1][j + 1];
 
-            // Triangulo 1: p00 - p10 - p01
-            emitVertex(p00);
-            emitVertex(p10);
-            emitVertex(p01);
+            if (i == 0) {
+                // El anillo 0 colapsa en un unico centro. Se emite un solo
+                // triangulo por sector para evitar la cara degenerada.
+                emitVertex(p00);
+                emitVertex(p11);
+                emitVertex(p10);
+            } else {
+                // Orden antihorario visto desde arriba: normales hacia +Y.
+                emitVertex(p00);
+                emitVertex(p01);
+                emitVertex(p10);
 
-            // Triangulo 2: p01 - p10 - p11
-            emitVertex(p01);
-            emitVertex(p10);
-            emitVertex(p11);
+                emitVertex(p01);
+                emitVertex(p11);
+                emitVertex(p10);
+            }
         }
     }
     glEnd();
@@ -259,6 +266,21 @@ void Ocean::update(float time) {
     computeNormals();
 }
 
+// Evalua h(x,z,t) igual que update(), pero para un punto cualquiera
+// (no tiene que ser un vertice de la malla)
+float Ocean::getHeightAt(float x, float z, float time) const {
+    float height = 0.0f;
+    for (size_t w = 0; w < waves.size(); ++w) {
+        const Wave& wave = waves[w];
+        float k = wave.getWaveNumber();
+        float theta = k * (x * cosf(wave.getDirection()) + z * sinf(wave.getDirection()))
+                      - 2.0f * PI * wave.getFrequency() * time
+                      + wave.getPhase();
+        height += wave.getAmplitude() * cosf(theta);
+    }
+    return height;
+}
+
 // Calcula la normal de cada vertice promediando las normales de las caras
 // (triangulos) que lo tocan
 void Ocean::computeNormals() {
@@ -280,21 +302,28 @@ void Ocean::computeNormals() {
             WPoint& p01 = mesh[i][j + 1];
             WPoint& p11 = mesh[i + 1][j + 1];
 
-            // Triangulo 1: p00 p10 p01
-            float e1x = p10.x - p00.x, e1y = p10.y - p00.y, e1z = p10.z - p00.z;
-            float e2x = p01.x - p00.x, e2y = p01.y - p00.y, e2z = p01.z - p00.z;
+            // Primer triangulo con orden antihorario visto desde +Y.
+            // En el centro se usa p00-p11-p10 y se omite la cara degenerada.
+            WPoint& firstA = p00;
+            WPoint& firstB = (i == 0) ? p11 : p01;
+            WPoint& firstC = p10;
+
+            float e1x = firstB.x - firstA.x, e1y = firstB.y - firstA.y, e1z = firstB.z - firstA.z;
+            float e2x = firstC.x - firstA.x, e2y = firstC.y - firstA.y, e2z = firstC.z - firstA.z;
 
             float fnx = e1y * e2z - e1z * e2y;
             float fny = e1z * e2x - e1x * e2z;
             float fnz = e1x * e2y - e1y * e2x;
 
-            p00.nx += fnx; p00.ny += fny; p00.nz += fnz;
-            p10.nx += fnx; p10.ny += fny; p10.nz += fnz;
-            p01.nx += fnx; p01.ny += fny; p01.nz += fnz;
+            firstA.nx += fnx; firstA.ny += fny; firstA.nz += fnz;
+            firstB.nx += fnx; firstB.ny += fny; firstB.nz += fnz;
+            firstC.nx += fnx; firstC.ny += fny; firstC.nz += fnz;
 
-            // Triangulo 2: p01 p10 p11
-            e1x = p10.x - p01.x; e1y = p10.y - p01.y; e1z = p10.z - p01.z;
-            e2x = p11.x - p01.x; e2y = p11.y - p01.y; e2z = p11.z - p01.z;
+            if (i == 0) continue;
+
+            // Segundo triangulo: p01-p11-p10.
+            e1x = p11.x - p01.x; e1y = p11.y - p01.y; e1z = p11.z - p01.z;
+            e2x = p10.x - p01.x; e2y = p10.y - p01.y; e2z = p10.z - p01.z;
 
             fnx = e1y * e2z - e1z * e2y;
             fny = e1z * e2x - e1x * e2z;

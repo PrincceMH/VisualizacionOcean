@@ -3,14 +3,14 @@
 ### macOS
 
 ```bash
-g++ -std=c++11 src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp -o Oceano -framework OpenGL -framework GLUT -Wno-deprecated-declarations
+g++ -std=c++11 src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp src/Boat.cpp src/Island.cpp src/Lighthouse.cpp -o Oceano -framework OpenGL -framework GLUT -Wno-deprecated-declarations
 ./Oceano
 ```
 
 ### Windows (MinGW + freeglut)
 
 ```bash
-g++ src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp -o Oceano.exe -lopengl32 -lglu32 -lfreeglut
+g++ src/main.cpp src/Ocean.cpp src/Wave.cpp src/Environment.cpp src/Boat.cpp src/Island.cpp src/Lighthouse.cpp -o Oceano.exe -lopengl32 -lglu32 -lfreeglut
 ./Oceano.exe
 ```
 # Simulación de la Superficie del Océano
