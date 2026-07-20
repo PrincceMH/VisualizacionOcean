@@ -17,9 +17,16 @@ void Environment::initLight() const {
     glEnable(GL_LIGHT0);
     glEnable(GL_NORMALIZE);
 
-    GLfloat ambient[]  = { 0.24f, 0.22f, 0.26f, 1.0f };
-    GLfloat diffuse[]  = { 0.95f, 0.88f, 0.70f, 1.0f };
-    GLfloat specular[] = { 0.70f, 0.68f, 0.62f, 1.0f };
+    // El brillo especular se calcula con la posicion real de la camara: el
+    // reflejo del sol se concentra y se mueve con las olas (destello, no mancha).
+    glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+    // El especular se aplica DESPUES de la textura, no antes: asi el brillo
+    // no se ensucia al modularse con ocean.tga y se mantiene limpio y blanco.
+    glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
+
+    GLfloat ambient[]  = { 0.44f, 0.47f, 0.54f, 1.0f };
+    GLfloat diffuse[]  = { 0.62f, 0.60f, 0.52f, 1.0f };
+    GLfloat specular[] = { 0.45f, 0.44f, 0.40f, 1.0f };
 
     glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
