@@ -28,6 +28,7 @@
   showstringspaces=false
 }
 
+
 \title{Proyecto Final \\ \large Sistema de Animación de Océano}
 \author{
   Princce Yorwin Mariños Hilario \\
@@ -75,15 +76,16 @@ Arequipa --- Perú \\
 Este documento describe el estado actual del proyecto \emph{Sistema de
 Animación de Océano}: una superficie de agua animada mediante superposición
 de ondas sinusoidales, con normales por vértice, iluminación con material
-especular, texturizado real, cielo con sol y cámara orbital interactiva. El código fuente y
+especular, texturizado real, cielo con sol, espuma en las crestas, niebla
+atmosférica y cámara orbital interactiva. El código fuente y
 los recursos están disponibles en el repositorio del grupo:
 
 \begin{center}
     \url{https://github.com/PrincceMH/VisualizacionOcean}
 \end{center}
 
-Quedan pendientes, y se detallan en la Sección~\ref{sec:pendiente}, los
-controles adicionales de teclado, el barco y la entrega final en video.
+Quedan pendientes, y se detallan en la Sección~\ref{sec:pendiente}, el barco
+y la entrega final en video.
 
 \section{Organización del proyecto}
 
@@ -110,7 +112,8 @@ VisualizacionOcean/
 |       +-- ocean.tga
 |
 +-- data/
-    +-- spectrum.txt      (espectro de olas: amplitud, direccion, frecuencia)
+    +-- spectrum.txt            (espectro base de olas)
+    +-- spectrum_realista.txt   (espectro por bandas: swell, chop, ripples)
 \end{lstlisting}
 
 \section{Arquitectura del sistema}
@@ -625,6 +628,109 @@ renderiza como un resplandor 2D, mientras que la iluminación del agua proviene
 de una luz direccional configurada en \texttt{Environment}.}
 \end{figure}
 
+\section{Realismo de la escena: malla en disco, espuma y niebla}
+\label{sec:realismo}
+
+Sobre la base ya descrita (oleaje, iluminación, textura y cielo) se añadieron
+tres mejoras orientadas a que la animación se lea como \emph{mar abierto} real,
+junto con los controles de teclado que quedaban pendientes.
+
+\subsection{Malla en disco: el mar parece infinito}
+
+La cuadrícula rectangular original dejaba ver las \emph{esquinas} del plano al
+orbitar la cámara. La malla se reconstruyó en \textbf{coordenadas polares}:
+anillos concéntricos (radio) y sectores angulares (ángulo), de modo que el
+borde queda siempre a la misma distancia del centro. Así la niebla lo funde de
+forma uniforme en todas las direcciones y no se percibe dónde termina la
+geometría.
+
+\begin{lstlisting}
+float r     = ((float)i / (rows - 1)) * maxRadius;   // anillo (radio)
+float theta = ((float)j / (cols - 1)) * 2.0f * PI;   // sector (angulo)
+mesh[i][j].x = r * cosf(theta);
+mesh[i][j].z = r * sinf(theta);
+\end{lstlisting}
+
+Las coordenadas de textura se mantienen \emph{planares} sobre el disco
+($s = x/\text{tile}$, $t = z/\text{tile}$), para que la textura se repita en el
+mundo sin el remolino que producirían unas UV polares.
+
+\subsection{Espectro realista por bandas}
+
+El espectro (\texttt{data/spectrum\_realista.txt}) se reorganizó agrupando las
+olas por bandas de frecuencia con la amplitud decreciendo hacia las altas:
+\emph{swell} (olas grandes y casi alineadas con el viento), olas medias, oleaje
+corto (\emph{chop}) y \emph{ripples} finos. \texttt{loadWaves()} ahora ignora
+líneas vacías y comentarios (\texttt{\#}), lo que permite documentar el archivo
+sin tocar el código.
+
+\subsection{Espuma en las crestas}
+
+La espuma se dibuja en una \textbf{segunda pasada} sobre la misma geometría,
+con mezcla \emph{aditiva} (\texttt{glBlendFunc(GL\_ONE, GL\_ONE)}). Cada vértice
+aporta una cantidad de espuma proporcional a su altura, normalizada contra la
+cresta más alta del cuadro: los valles suman negro (nada) y solo las crestas
+suman blanco. Por eso la espuma aparece \emph{únicamente} en la parte superior
+de las olas, como en el mar real, sin repintar los valles.
+
+\begin{lstlisting}
+float f = foamFactor(p.y);   // 0 en valles, 1 en crestas
+glColor3f(f, f, f);          // se suma sobre el agua ya dibujada
+\end{lstlisting}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/oceanoconespuma.png}
+\caption{Espuma concentrada en las crestas gracias a la segunda pasada aditiva:
+la ola en primer plano queda cubierta de blanco en su parte alta mientras los
+valles conservan el color del agua, tal como ocurre en el mar real. Al fondo se
+aprecia además la banda de niebla que funde el oleaje lejano con el cielo.}
+\end{figure}
+
+\subsection{Niebla atmosférica}
+
+Se activa la niebla lineal de OpenGL (\texttt{GL\_LINEAR}) con el color del
+horizonte cálido. El agua cercana se ve nítida y, a partir de cierta distancia,
+se tiñe progresivamente hasta fundirse con el cielo justo en el borde del disco:
+
+\begin{lstlisting}
+glFogi(GL_FOG_MODE, GL_LINEAR);
+glFogfv(GL_FOG_COLOR, fogColor);   // = color del horizonte
+glFogf(GL_FOG_START, 40.0f);       // mar cercano nitido
+glFogf(GL_FOG_END,   72.0f);       // borde del disco totalmente fundido
+\end{lstlisting}
+
+La niebla se habilita \emph{solo} para el océano: el cielo y el sol se dibujan
+antes, en 2D, y no deben verse afectados por ella.
+
+\subsection{Controles de teclado en tiempo real}
+
+Con las mejoras anteriores se implementaron los controles que quedaban
+pendientes en el enunciado:
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Tecla & Acción \\
+\midrule
+W / S \; (o $\uparrow$ / $\downarrow$) & aumentar / reducir la velocidad del oleaje \\
+Espacio & pausar / reanudar la animación \\
+T & activar / desactivar la textura del agua \\
+L & activar / desactivar la iluminación \\
++ / $-$ & acercar / alejar la cámara \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{figuras/oceanoconsprectusrealistamasneblina.png}
+\caption{Resultado combinado: espectro realista por bandas, espuma aditiva
+sobre las crestas y niebla atmosférica que funde el borde del disco con el
+cielo. La malla en disco elimina las esquinas del plano y da la sensación de
+mar abierto.}
+\end{figure}
+
 \section{Cámara interactiva}
 
 \texttt{main.cpp} implementa una cámara orbital con \textbf{coordenadas
@@ -639,8 +745,6 @@ resultante se pasa a \texttt{gluLookAt} en cada cuadro.
 Lo que aún falta para cubrir por completo los requerimientos del enunciado:
 
 \begin{itemize}
-  \item \textbf{Controles de teclado en tiempo real}: aumentar/disminuir la
-        velocidad de la animación, y alternar textura e iluminación on/off.
   \item \textbf{Elemento adicional restante}: integrar un barco flotando sobre
         las olas, con posición, escala, iluminación y material propios.
   \item \textbf{Entrega final}: video corto de la animación.
@@ -653,9 +757,10 @@ WPoint, Ocean y Environment), la malla se anima con superposición de ondas sinu
 leídas desde un archivo de espectro, las normales se calculan promediando las
 caras vecinas de cada vértice tal como recomienda el enunciado, y la escena
 ya integra iluminación con material especular, una textura real de agua, cielo
-con sol y una cámara orbital interactiva. El trabajo restante es acotado:
-controles de teclado adicionales, niebla atmosférica y el barco como elemento
-extra de la escena.
+con sol, una malla en disco que simula mar abierto, espuma aditiva sobre las
+crestas, niebla atmosférica y una cámara orbital interactiva con controles de
+teclado en tiempo real. El trabajo restante es acotado: el barco como elemento
+extra de la escena y el video final de la entrega.
 
 \end{document}
 
