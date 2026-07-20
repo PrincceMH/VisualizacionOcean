@@ -231,6 +231,9 @@ int main(int argc, char** argv) {
     // (El original data/spectrum.txt se conserva; cambia esta ruta para volver a el.)
     ocean.loadWaves("data/spectrum_realista.txt");
     ocean.loadTexture("assets/textures/ocean.tga");
+    // Inicializa alturas, normales y maxHeight antes de dibujar el primer frame;
+    // el barco consulta exactamente este mismo estado temporal desde el inicio.
+    ocean.update(simTime);
 
     std::cout << "\n=== Controles ===\n"
               << "  Arrastrar mouse : rotar camara\n"
