@@ -89,7 +89,7 @@ void Ocean::drawTriangles() {
 void Ocean::draw() {
 
     glEnable(GL_TEXTURE_2D);
-    
+
     glBindTexture(GL_TEXTURE_2D, textureID);
     
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
