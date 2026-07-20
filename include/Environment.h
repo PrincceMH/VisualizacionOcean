@@ -3,21 +3,21 @@
 
 class Environment {
 private:
-    float sunX;
-    float sunY;
-    float sunSize;
-    float sunDirX;
-    float sunDirY;
-    float sunDirZ;
+    float toSunX;
+    float toSunY;
+    float toSunZ;
+    float skyRadius;
+    float sunCoreRadius;
+    float sunGlowRadius;
 
-    void drawSky(int w, int h) const;
-    void drawSun(int w, int h) const;
+    void drawSky() const;
+    void drawSun() const;
 
 public:
     Environment();
     void initLight() const;
     void applyLight() const;
-    void draw(int w, int h) const;
+    void draw(float cameraX, float cameraY, float cameraZ) const;
 };
 
 #endif
