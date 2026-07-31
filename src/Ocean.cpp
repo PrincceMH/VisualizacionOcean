@@ -18,7 +18,7 @@ static const float PI = 3.14159265358979323846f;
 //dimensiones y malla
 Ocean::Ocean(int numRings, int numSectors, float radius)
     : rows(numRings), cols(numSectors + 1), maxRadius(radius),
-      textureID(0), showTexture(true), maxHeight(1.0f), foamPass(false) {
+      textureID(0), showTexture(true), maxHeight(1.0f), foamPass(false), waveScale(1.0f) {
     initMesh();
 }
 
@@ -270,7 +270,7 @@ void Ocean::update(float time) {
                               - 2.0f * PI * wave.getFrequency() * time
                               + wave.getPhase();
                 // Reducimos la amplitud de las olas para que no sea tormenta
-                height += (wave.getAmplitude() * seaCalmness) * cosf(theta);
+                height += (wave.getAmplitude() * seaCalmness * waveScale) * cosf(theta);
             }
 
             // --- FÍSICA DE PLAYA ---
@@ -332,7 +332,7 @@ float Ocean::getHeightAt(float x, float z, float time) const {
         float theta = k * (x * cosf(wave.getDirection()) + z * sinf(wave.getDirection()))
                       - 2.0f * PI * wave.getFrequency() * time
                       + wave.getPhase();
-        height += (wave.getAmplitude() * seaCalmness) * cosf(theta);
+        height += (wave.getAmplitude() * seaCalmness * waveScale) * cosf(theta);
     }
 
     const float islandX = 0.0f, islandZ = -45.0f;

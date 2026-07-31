@@ -11,6 +11,7 @@
 #include "../include/Boat.h"
 #include "../include/Island.h"
 #include "../include/Lighthouse.h"
+#include "../include/Rain.h"
 #include "../include/stb_image.h"
 
 static const float PI = 3.14159265f;
@@ -54,6 +55,14 @@ float simTime = 0.0f;
 float animSpeed = 1.0f;   // multiplicador de velocidad de la animacion
 bool lightingOn = true;   // iluminacion encendida/apagada
 bool textureOn = true;    // textura del agua encendida/apagada
+
+// --- Modo tormenta ---
+Rain rain(1500);           // sistema de lluvia (billboards)
+bool  stormActive = false; // tecla P: activa/desactiva la tormenta
+float stormT = 0.0f;       // factor 0..1 que interpola todo (transicion gradual ~2.5s)
+float flash = 0.0f;        // intensidad del relampago actual (decae rapido)
+
+float frand01() { return rand() / (float)RAND_MAX; }
 
 GLuint loadTextureGeneral(const char* filename) {
     GLuint texID;
@@ -129,8 +138,11 @@ void display() {
               cameraZ + forwardZ,
               0.0, 1.0, 0.0);
 
+    // El faro casi apagado de dia, encendido con fuerza en tormenta.
+    const float faroIntensity = 0.15f + 0.85f * stormT;
+
     environment.applyLight();
-    lighthouse.applyLight(simTime);   // foco giratorio del faro (GL_LIGHT1)
+    lighthouse.applyLight(faroIntensity);   // luz puntual del faro (GL_LIGHT1)
     environment.draw(cameraX, cameraY, cameraZ);
 
     // Toggle de iluminacion (tecla L)
@@ -157,16 +169,57 @@ void display() {
     glDisable(GL_COLOR_MATERIAL);
     glDisable(GL_FOG);
 
-    // Haz de luz visible del faro (translucido, se dibuja al final)
-    lighthouse.drawBeam(simTime);
+    // Haz de luz visible del faro (giratorio, inclinado hacia la camara)
+    lighthouse.drawBeam(simTime, cameraX, cameraY, cameraZ, faroIntensity);
+
+    // Lluvia de tormenta (billboards), su alfa sube con stormT
+    rain.draw(stormT);
+
+    // Relampago: destello blanco a pantalla completa (aditivo) que decae rapido
+    if (flash > 0.01f) {
+        glMatrixMode(GL_PROJECTION); glPushMatrix(); glLoadIdentity();
+        gluOrtho2D(0, 1, 0, 1);
+        glMatrixMode(GL_MODELVIEW);  glPushMatrix(); glLoadIdentity();
+        glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT);
+        glDisable(GL_LIGHTING); glDisable(GL_TEXTURE_2D); glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND); glBlendFunc(GL_SRC_ALPHA, GL_ONE);   // aditivo
+        glColor4f(0.85f, 0.88f, 1.0f, flash * 0.55f);
+        glBegin(GL_QUADS);
+            glVertex2f(0, 0); glVertex2f(1, 0); glVertex2f(1, 1); glVertex2f(0, 1);
+        glEnd();
+        glPopAttrib();
+        glMatrixMode(GL_PROJECTION); glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);  glPopMatrix();
+    }
 
     glutSwapBuffers();
 }
 
 void timer(int) {
-    // La velocidad de la animacion escala cuanto avanza el tiempo por frame
-    simTime += 0.016f * animSpeed;
+    const float dt = 0.016f;
+
+    // Transicion gradual del clima: stormT avanza hacia 1 (tormenta) o 0 (despejado)
+    // a lo largo de ~2.5 s, de modo que todos los efectos entran/salen suavemente.
+    const float target = stormActive ? 1.0f : 0.0f;
+    const float rate = dt / 2.5f;
+    if (stormT < target) stormT = fminf(target, stormT + rate);
+    else                 stormT = fmaxf(target, stormT - rate);
+
+    // En tormenta el tiempo avanza mas rapido (olas mas veloces) y la amplitud sube.
+    simTime += dt * animSpeed * (1.0f + 0.8f * stormT);
+    ocean.setWaveScale(1.0f + 3.0f * stormT);   // mar embravecido
     ocean.update(simTime);
+
+    environment.setStorm(stormT);               // cielo/luna/iluminacion
+    rain.update(dt, cameraX, cameraY, cameraZ); // lluvia (sigue a la camara)
+
+    // Relampagos: solo con tormenta marcada. Baja probabilidad de disparo por frame;
+    // el destello decae rapido (~0.15 s). A veces encadena un segundo fogonazo.
+    if (stormT > 0.45f && flash < 0.05f && frand01() < 0.006f)
+        flash = (frand01() < 0.4f) ? 0.7f : 1.0f;
+    flash -= dt * 6.0f;
+    if (flash < 0.0f) flash = 0.0f;
+
     glutPostRedisplay();
     glutTimerFunc(16, timer, 0);
 }
@@ -189,6 +242,10 @@ void keyboard(unsigned char key, int x, int y) {
 
     // Activar / desactivar iluminacion
     if (key == 'l' || key == 'L') lightingOn = !lightingOn;
+
+    // Activar / desactivar MODO TORMENTA (transicion gradual)
+    if (key == 'p' || key == 'P') stormActive = !stormActive;
+
     if (key == 27 || key == 'q' || key == 'Q') exit(0);
     glutPostRedisplay();
 }
@@ -276,6 +333,8 @@ int main(int argc, char** argv) {
     texFaro = loadTextureGeneral("assets/textures/faro.jpg");
     texCubierta = loadTextureGeneral("assets/textures/cubierta.jpg");
 
+    rain.initTexture();   // textura procedural de las gotas de lluvia
+
     // Espectro con rango de frecuencias amplio y dispersion direccional.
     // (El original data/spectrum.txt se conserva; cambia esta ruta para volver a el.)
     ocean.loadWaves("data/spectrum_realista.txt");
@@ -292,6 +351,7 @@ int main(int argc, char** argv) {
               << "  Barra espaciadora: pausar / reanudar\n"
               << "  T               : activar / desactivar textura\n"
               << "  L               : activar / desactivar iluminacion\n"
+              << "  P               : MODO TORMENTA (lluvia, luna, faro, mar bravo)\n"
               << "  Q / Esc         : salir\n" << std::endl;
 
     glutDisplayFunc(display);

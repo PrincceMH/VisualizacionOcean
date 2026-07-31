@@ -12,15 +12,15 @@ Lighthouse::Lighthouse(float posX, float posY, float posZ, float towerH, float b
 // Luz PUNTUAL calida del faro con GL_LIGHT1 (w=1): tiene posicion en la linterna
 // y atenuacion con la distancia. Da un glow al entorno; el "rayo" visible que
 // gira lo dibuja drawBeam(). Debe fijarse con la camara ya aplicada.
-void Lighthouse::applyLight(float time) const {
+void Lighthouse::applyLight(float intensity) const {
     glEnable(GL_LIGHT1);
 
     // Posicion en la linterna. w=1 -> luz puntual (no direccional como el sol).
     GLfloat pos[] = { x, y + towerHeight * 1.15f, z, 1.0f };
     glLightfv(GL_LIGHT1, GL_POSITION, pos);
 
-    // Color calido del haz
-    GLfloat warm[] = { 1.0f, 0.85f, 0.45f, 1.0f };
+    // Color calido escalado por la intensidad (tenue de dia, fuerte en tormenta).
+    GLfloat warm[] = { 1.0f * intensity, 0.85f * intensity, 0.45f * intensity, 1.0f };
     GLfloat none[] = { 0.0f, 0.0f, 0.0f, 1.0f };
     glLightfv(GL_LIGHT1, GL_AMBIENT,  none);
     glLightfv(GL_LIGHT1, GL_DIFFUSE,  warm);
@@ -34,20 +34,27 @@ void Lighthouse::applyLight(float time) const {
     // Luz puntual (sin cono): da un glow calido a la torre y su entorno, sin el
     // borde duro que causaba la mancha. El "rayo" visible lo dibuja drawBeam().
     glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 180.0f);
-    (void)time;
 }
 
-// Haz de luz VISIBLE del faro: un cono translucido que gira, dibujado como
-// geometria con blending aditivo (no es iluminacion, es el "rayo" que se ve
-// cruzar el aire, como en un faro real). Brillante en la linterna, se desvanece
-// hacia el extremo. Debe llamarse despues de la geometria opaca.
-void Lighthouse::drawBeam(float time) const {
+// Haz de luz VISIBLE del faro: un cono translucido que GIRA (barre como un faro)
+// pero con la inclinacion fija hacia la ALTURA de la camara, de modo que en cada
+// vuelta, al pasar por tu direccion, el rayo te apunta de lleno. Se dibuja con
+// blending aditivo. Debe llamarse despues de la geometria opaca, con la camara.
+void Lighthouse::drawBeam(float time, float camX, float camY, float camZ, float intensity) const {
+    if (intensity <= 0.01f) return;
     const float PI = 3.14159265f;
     float baseY = y + towerHeight * 1.15f;   // sale de la linterna
-    float len   = 42.0f;                      // largo del haz
-    float rad   = 3.2f;                       // radio del cono en el extremo
-    float tilt  = -0.10f;                     // leve inclinacion hacia el mar
-    float angleDeg = time * 45.0f;            // barrido (grados por unidad de tiempo)
+
+    // Elevacion hacia la camara: el haz barre a esa altura, asi al pasar por tu
+    // azimut te apunta. La distancia fija el largo para que el rayo te alcance.
+    float dx = camX - x, dy = camY - baseY, dz = camZ - z;
+    float dist = sqrtf(dx * dx + dy * dy + dz * dz);
+    float h    = sqrtf(dx * dx + dz * dz);
+    float elev = (h > 0.001f) ? atan2f(dy, h) * 180.0f / PI : 0.0f;
+
+    float len = (dist > 1.0f) ? dist : 42.0f;   // el haz llega hasta la camara
+    float rad = 4.5f;                            // radio del cono (un poco mayor)
+    float angleDeg = time * 45.0f;               // barrido (grados por unidad de tiempo)
 
     glPushAttrib(GL_ENABLE_BIT | GL_DEPTH_BUFFER_BIT | GL_CURRENT_BIT);
     glDisable(GL_LIGHTING);
@@ -59,17 +66,18 @@ void Lighthouse::drawBeam(float time) const {
 
     glPushMatrix();
         glTranslatef(x, baseY, z);
-        glRotatef(angleDeg, 0.0f, 1.0f, 0.0f); // gira el haz alrededor del eje Y
+        glRotatef(angleDeg, 0.0f, 1.0f, 0.0f); // barrido en azimut (gira con el tiempo)
+        glRotatef(elev,     0.0f, 0.0f, 1.0f); // inclinacion fija hacia la altura de la camara
 
         glBegin(GL_TRIANGLES);
         const int seg = 20;
         for (int i = 0; i < seg; ++i) {
             float t0 = 2.0f * PI * i / seg;
             float t1 = 2.0f * PI * (i + 1) / seg;
-            float y0 = tilt * len + rad * cosf(t0), z0 = rad * sinf(t0);
-            float y1 = tilt * len + rad * cosf(t1), z1 = rad * sinf(t1);
+            float y0 = rad * cosf(t0), z0 = rad * sinf(t0);
+            float y1 = rad * cosf(t1), z1 = rad * sinf(t1);
 
-            glColor4f(1.0f, 0.90f, 0.55f, 0.35f);  // apice (linterna): brillante
+            glColor4f(1.0f, 0.90f, 0.55f, 0.35f * intensity);  // apice (linterna): brillante
             glVertex3f(0.0f, 0.0f, 0.0f);
             glColor4f(1.0f, 0.85f, 0.45f, 0.0f);   // extremo: transparente
             glVertex3f(len, y0, z0);

@@ -21,11 +21,11 @@ public:
     // Ahora el compilador ya sabrá qué es GLuint
     void draw(GLuint textureID) const;
 
-    // Configura GL_LIGHT1 como luz puntual del faro. Debe llamarse con la camara
-    // ya aplicada (justo despues de gluLookAt) y antes de dibujar.
-    void applyLight(float time) const;
+    // Configura GL_LIGHT1 como luz puntual del faro, con intensidad 0..1
+    // (tenue de dia, fuerte en tormenta). Debe llamarse tras gluLookAt.
+    void applyLight(float intensity) const;
 
-    // Dibuja el haz de luz visible (cono translucido giratorio). Debe llamarse
-    // despues de la geometria opaca de la escena.
-    void drawBeam(float time) const;
+    // Dibuja el haz de luz visible (cono translucido giratorio, inclinado hacia
+    // la camara), con intensidad 0..1. Debe llamarse despues de la geometria opaca.
+    void drawBeam(float time, float camX, float camY, float camZ, float intensity) const;
 };

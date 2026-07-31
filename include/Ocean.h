@@ -26,6 +26,9 @@ private:
     // Altura de cresta mas alta del frame actual (referencia para la espuma)
     float maxHeight;
 
+    // Multiplicador de amplitud de las olas (1 = normal, >1 = mar embravecido)
+    float waveScale;
+
     // true durante la 2da pasada (dibuja solo la espuma, sumada sobre el agua)
     bool foamPass;
 
@@ -45,6 +48,9 @@ public:
 
     // Activa o desactiva la textura del agua (control por teclado)
     void setTexture(bool on) { showTexture = on; }
+
+    // Escala la fuerza de las olas (amplitud). 1 = normal, ~2 = tormenta.
+    void setWaveScale(float s) { waveScale = s; }
 
     void update(float time);
     void computeNormals();
