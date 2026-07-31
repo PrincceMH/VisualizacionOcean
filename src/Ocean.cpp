@@ -266,11 +266,8 @@ void Ocean::update(float time) {
     computeNormals();
 }
 
-<<<<<<< HEAD
-=======
 // Evalua h(x,z,t) igual que update(), pero para un punto cualquiera
 // (no tiene que ser un vertice de la malla)
->>>>>>> integracion
 float Ocean::getHeightAt(float x, float z, float time) const {
     float height = 0.0f;
     for (size_t w = 0; w < waves.size(); ++w) {
@@ -284,10 +281,6 @@ float Ocean::getHeightAt(float x, float z, float time) const {
     return height;
 }
 
-<<<<<<< HEAD
-
-=======
->>>>>>> integracion
 // Calcula la normal de cada vertice promediando las normales de las caras
 // (triangulos) que lo tocan
 void Ocean::computeNormals() {

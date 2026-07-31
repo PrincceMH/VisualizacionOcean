@@ -49,10 +49,7 @@ public:
     void update(float time);
     void computeNormals();
     void draw();
-<<<<<<< HEAD
-=======
 
->>>>>>> integracion
     // Evalua h(x,z,t) directamente con la formula de olas, sin depender
     // de que (x,z) coincida con un vertice de la malla. Util para que
     // otros objetos (barco, boyas, etc.) sepan a que altura flotar.

@@ -25,12 +25,6 @@ Island island(0.0f, -20.0f, 24.0f, 9.0f, 4.0f, 16, 64, 0.3f, 11);
 
 Lighthouse lighthouse(island.getCenterX(), island.getPeakHeight(), island.getCenterZ());
 
-Boat boat(2.0f, 3.0f, 7.5f, 2.6f, 1.4f);
-
-Island island(0.0f, -20.0f, 24.0f, 9.0f, 4.0f, 16, 64, 0.3f, 11);
-
-Lighthouse lighthouse(island.getCenterX(), island.getPeakHeight(), island.getCenterZ());
-
 int winW = 800, winH = 600;
 float cameraX = 0.0f;
 const float cameraY = 7.5f;
@@ -104,6 +98,7 @@ void display() {
               0.0, 1.0, 0.0);
 
     environment.applyLight();
+    lighthouse.applyLight(simTime);   // foco giratorio del faro (GL_LIGHT1)
     environment.draw(cameraX, cameraY, cameraZ);
 
     // Toggle de iluminacion (tecla L): afecta a toda la geometria, no al cielo.
@@ -123,9 +118,9 @@ void display() {
     boat.draw(ocean, simTime);
     glDisable(GL_COLOR_MATERIAL);
     glDisable(GL_FOG);
-    island.draw();
-    lighthouse.draw();
-    boat.draw(ocean, simTime);
+
+    // Haz de luz visible del faro (translucido, se dibuja al final)
+    lighthouse.drawBeam(simTime);
 
     glutSwapBuffers();
 }

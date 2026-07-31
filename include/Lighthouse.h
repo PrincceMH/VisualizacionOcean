@@ -16,6 +16,14 @@ public:
                float towerH = 4.0f, float baseR = 0.55f, float topR = 0.35f);
 
     void draw() const;
+
+    // Configura GL_LIGHT1 como luz puntual del faro. Debe llamarse con la camara
+    // ya aplicada (justo despues de gluLookAt) y antes de dibujar.
+    void applyLight(float time) const;
+
+    // Dibuja el haz de luz visible (cono translucido giratorio). Debe llamarse
+    // despues de la geometria opaca de la escena.
+    void drawBeam(float time) const;
 };
 
 #endif
