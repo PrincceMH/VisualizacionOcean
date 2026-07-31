@@ -1,0 +1,30 @@
+# Espectro de olas -- formato por linea:  amplitud  direccion(rad)  frecuencia
+# Direccion dominante del viento ~ 0.35 rad. Amplitud decrece con la frecuencia
+# (olas grandes = mas altas; ripples = casi planos) para dar detalle sin picos.
+#
+# --- Mar de fondo (swell): olas grandes, poca frecuencia, casi alineadas ---
+0.50  0.30  0.22
+0.44  0.15  0.24
+0.40  0.45  0.25
+0.36  0.28  0.27
+0.33  0.05  0.29
+# --- Olas medias: aportan la forma principal del oleaje ---
+0.26  0.55  0.33
+0.22 -0.10  0.35
+0.20  0.40  0.38
+0.17  0.70  0.41
+0.15  0.10  0.44
+0.13 -0.25  0.47
+# --- Oleaje corto (chop): mas disperso en direccion ---
+0.11  0.85  0.51
+0.09 -0.30  0.54
+0.08  0.55  0.57
+0.07  1.00  0.60
+0.06  0.05  0.63
+0.05 -0.45  0.66
+# --- Ripples finos: amplitud minima, direcciones muy abiertas ---
+0.040  0.75  0.71
+0.035 -0.55  0.74
+0.030  1.10  0.77
+0.025  0.20  0.80
+0.020 -0.20  0.83

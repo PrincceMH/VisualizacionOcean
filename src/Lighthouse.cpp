@@ -9,9 +9,14 @@
 Lighthouse::Lighthouse(float posX, float posY, float posZ, float towerH, float baseR, float topR)
     : x(posX), y(posY), z(posZ), baseRadius(baseR), topRadius(topR), towerHeight(towerH) {}
 
-void Lighthouse::draw() const {
+void Lighthouse::draw(GLuint textureID) const {
     glPushMatrix();
         glTranslatef(x, y, z);
+
+        // Encendemos el motor 2D y amarramos la textura "faro.jpg"
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, textureID);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
         const int nBands = 6;
         float bandHeight = towerHeight / nBands;
@@ -19,6 +24,7 @@ void Lighthouse::draw() const {
             float r0 = baseRadius + (topRadius - baseRadius) * ((float)i / nBands);
             float r1 = baseRadius + (topRadius - baseRadius) * ((float)(i + 1) / nBands);
 
+            // Mantenemos la alternancia de color para teñir la textura
             if (i % 2 == 0) glColor3f(0.88f, 0.88f, 0.85f); // banda blanca
             else             glColor3f(0.75f, 0.15f, 0.12f); // banda roja
 
@@ -27,10 +33,17 @@ void Lighthouse::draw() const {
                 glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
                 GLUquadric* q = gluNewQuadric();
                 gluQuadricNormals(q, GLU_SMOOTH);
+                
+                // Activar coordenadas de textura para envolver el cilindro
+                gluQuadricTexture(q, GL_TRUE); 
+                
                 gluCylinder(q, r0, r1, bandHeight, 16, 1);
                 gluDeleteQuadric(q);
             glPopMatrix();
         }
+
+        // Apagamos las texturas para pintar los detalles superiores con colores solidos
+        glDisable(GL_TEXTURE_2D);
 
         float galleryY = towerHeight;
         float galleryR = topRadius * 1.6f;
@@ -59,7 +72,7 @@ void Lighthouse::draw() const {
         glPopMatrix();
         glDisable(GL_BLEND);
 
-        //  Techo conico de la linterna
+        // Techo conico de la linterna
         glColor3f(0.20f, 0.20f, 0.20f);
         glPushMatrix();
             glTranslatef(0.0f, lanternBaseY + lanternH, 0.0f);
@@ -69,7 +82,7 @@ void Lighthouse::draw() const {
             gluDeleteQuadric(qr);
         glPopMatrix();
 
-        //  Foco / destello en el centro de la linterna
+        // Foco / destello en el centro de la linterna
         glColor3f(1.0f, 0.95f, 0.6f);
         glPushMatrix();
             glTranslatef(0.0f, lanternBaseY + lanternH * 0.5f, 0.0f);

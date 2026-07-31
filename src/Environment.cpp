@@ -70,7 +70,7 @@ void setSkyColor(float x, float y, float z,
 
 Environment::Environment()
     : toSunX(-0.34f), toSunY(0.18f), toSunZ(-0.92f),
-      skyRadius(80.0f), sunCoreRadius(2.35f), sunGlowRadius(7.5f) {
+      skyRadius(450.0f), sunCoreRadius(8.0f), sunGlowRadius(25.0f) {
     const float length = sqrtf(toSunX * toSunX +
                                toSunY * toSunY +
                                toSunZ * toSunZ);
@@ -104,6 +104,12 @@ void Environment::initLight() const {
 
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
     glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, GL_TRUE);
+    // El especular se suma despues de modular la textura, para conservar un
+    // reflejo solar limpio sin teñirlo con ocean.tga. Windows suele exponer
+    // solo OpenGL 1.1 en GL/gl.h, por lo que esta mejora 1.2 es opcional.
+#if defined(GL_LIGHT_MODEL_COLOR_CONTROL) && defined(GL_SEPARATE_SPECULAR_COLOR)
+    glLightModeli(GL_LIGHT_MODEL_COLOR_CONTROL, GL_SEPARATE_SPECULAR_COLOR);
+#endif
     glLightfv(GL_LIGHT0, GL_AMBIENT, sunAmbient);
     glLightfv(GL_LIGHT0, GL_DIFFUSE, sunDiffuse);
     glLightfv(GL_LIGHT0, GL_SPECULAR, sunSpecular);

@@ -5,6 +5,8 @@
 #include <GL/glut.h>
 #endif
 #include <cmath>
+#include <algorithm>
+using namespace std;
 
 static const float PI = 3.14159265358979323846f;
 
@@ -106,7 +108,6 @@ void Island::colorForHeight(float t) const {
     }
 }
 
-
 void Island::drawRock(float cx, float cy, float cz, float scale, int seed) const {
     auto noise = [seed](int i) {
         float v = sinf((float)seed * 12.9898f + (float)i * 78.233f) * 43758.5453f;
@@ -153,7 +154,106 @@ void Island::drawRock(float cx, float cy, float cz, float scale, int seed) const
     glEnd();
 }
 
-void Island::draw() const {
+void Island::draw(GLuint texArena, GLuint texPasto) const {
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+    float origEmission[] = {0.0f, 0.0f, 0.0f, 1.0f};
+
+    // Ancho de la franja de transición entre arena y pasto (en unidades
+    // normalizadas de altura, igual que h = p.y/maxHeight). Con rings=16
+    // el salto de altura entre anillos vecinos puede llegar a ~0.10, asi
+    // que un ancho de 0.14 asegura que el blend cubra 1-2 anillos.
+    const float transitionWidth = 0.14f;
+
+    // Tinte de color para el pasto. NO es un hack de iluminacion (no toca
+    // emision ni engaña a las luces), solo un color base para compensar
+    // que la textura real se ve algo apagada bajo la luz naranja del
+    // atardecer. Ajusta a gusto (1,1,1 = sin tinte, color real puro).
+    const float pastoTint[3] = {0.85f, 1.0f, 0.80f};
+
+    // --- CLAVE DEL FIX: umbral basado en ANGULO REAL y en t=r/rings, no
+    // en el indice entero crudo de r/s. Antes se usaba sinf(s * 8.0f):
+    // como cada paso de "s" ya representa 2*PI/slices radianes, multiplicar
+    // el INDICE por 8.0 hace que la fase avance mas de una vuelta completa
+    // por cada paso -> eso es aliasing puro, no una onda suave, y es lo
+    // que se veia como ruido/geometria dentada en el borde arena-pasto.
+    // Ahora las frecuencias (3, 8, 2) representan "N ondas completas
+    // alrededor de la isla / a lo largo del radio", asi que el resultado
+    // es una linea de costa que serpentea de forma natural y continua.
+    auto vertexBlend = [&](const IPoint& p, int s, int r) -> float {
+        float h = p.y / maxHeight;               // 0 en la orilla, 1 en el centro
+        float ang = 2.0f * PI * (float)s / (float)slices; // angulo real (0..2PI)
+        float t = (float)r / (float)rings;                 // posicion radial (0..1)
+
+        float threshold = 0.20f
+                         + 0.04f * sinf(ang * 3.0f)               // 3 ondas alrededor de la isla
+                         + 0.02f * sinf(ang * 8.0f)               // 8 ondas mas finas encima
+                         + 0.015f * sinf(t * 2.0f * PI * 2.0f + ang); // variacion radial suave
+
+        float blend = (h - threshold) / transitionWidth + 0.5f;
+        return std::clamp(blend, 0.0f, 1.0f); // 0 = arena pura, 1 = pasto puro
+    };
+
+    auto emitQuad = [&](const IPoint& p00, const IPoint& p10, const IPoint& p01, const IPoint& p11,
+                         float uvScale, int s, int r, bool isGrassPass, const float tint[3]) {
+        auto emit = [&](const IPoint& p, int col, int row) {
+            if (isGrassPass) {
+                float t = vertexBlend(p, col, row);
+                glColor4f(tint[0], tint[1], tint[2], t);
+            }
+            glNormal3f(p.nx, p.ny, p.nz);
+            glTexCoord2f(p.x / uvScale, p.z / uvScale);
+            glVertex3f(p.x, p.y, p.z);
+        };
+        // p00,p10 -> columna s; p01,p11 -> columna s+1
+        // p00,p01 -> fila r;    p10,p11 -> fila r+1
+        emit(p00, s, r);     emit(p10, s, r + 1);     emit(p01, s + 1, r);
+        emit(p01, s + 1, r); emit(p10, s, r + 1);     emit(p11, s + 1, r + 1);
+    };
+
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, origEmission);
+    const float whiteTint[3] = {1.0f, 1.0f, 1.0f};
+
+    // ==================================================
+    // PASADA 1 (opaca): ARENA como base de TODA la isla.
+    // Se dibuja siempre (sin condicional de altura): sirve de fondo
+    // para que el pasto se funda encima en la franja de transicion
+    // sin dejar huecos.
+    // ==================================================
+    glDisable(GL_BLEND);
+    glBindTexture(GL_TEXTURE_2D, texArena);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    glBegin(GL_TRIANGLES);
+    for (int r = 0; r < rings; ++r) {
+        for (int s = 0; s < slices; ++s) {
+            emitQuad(mesh[r][s], mesh[r + 1][s], mesh[r][s + 1], mesh[r + 1][s + 1],
+                     10.0f, s, r, /*isGrassPass=*/false, whiteTint);
+        }
+    }
+    glEnd();
+
+    // ==================================================
+    // PASADA 2 (con blending por vertice): PASTO
+    // El alpha se calcula por cada vertice (no por quad completo) y
+    // OpenGL lo interpola dentro del triangulo -> transicion continua
+    // que sigue la geometria real de la malla, sin "escalones".
+    // ==================================================
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindTexture(GL_TEXTURE_2D, texPasto);
+
+    // *** FIX CLAVE ***
+    // La arena (pasada 1) ya escribió su profundidad en TODA la isla. Los
+    // triángulos del pasto ocupan exactamente la misma posición/profundidad
+    // (son la misma malla). Con el depth func por defecto (GL_LESS), esos
+    // fragmentos se descartan TODOS porque su profundidad no es "menor",
+    // es "igual" a la ya almacenada. Por eso el pasto no se veía en NINGÚN
+    // lado, ni siquiera forzado al 100%. GL_LEQUAL permite que pase cuando
+    // la profundidad es igual, dejando que el blending decida el color final.
+    glDepthFunc(GL_LEQUAL);
+
     glBegin(GL_TRIANGLES);
     for (int r = 0; r < rings; ++r) {
         for (int s = 0; s < slices; ++s) {
@@ -162,36 +262,26 @@ void Island::draw() const {
             const IPoint& p01 = mesh[r][s + 1];
             const IPoint& p11 = mesh[r + 1][s + 1];
 
-            colorForHeight(p00.y / maxHeight);
-            glNormal3f(p00.nx, p00.ny, p00.nz);
-            glVertex3f(p00.x, p00.y, p00.z);
+            // Optimizacion: si los 4 vertices estan claramente en zona de
+            // arena pura, ni dibujamos el quad de pasto (queda invisible
+            // de todas formas), esto solo ahorra fill-rate.
+            float t00 = vertexBlend(p00, s, r),     t10 = vertexBlend(p10, s, r + 1);
+            float t01 = vertexBlend(p01, s + 1, r), t11 = vertexBlend(p11, s + 1, r + 1);
+            if (t00 <= 0.0f && t10 <= 0.0f && t01 <= 0.0f && t11 <= 0.0f) continue;
 
-            colorForHeight(p10.y / maxHeight);
-            glNormal3f(p10.nx, p10.ny, p10.nz);
-            glVertex3f(p10.x, p10.y, p10.z);
-
-            colorForHeight(p01.y / maxHeight);
-            glNormal3f(p01.nx, p01.ny, p01.nz);
-            glVertex3f(p01.x, p01.y, p01.z);
-
-            colorForHeight(p01.y / maxHeight);
-            glNormal3f(p01.nx, p01.ny, p01.nz);
-            glVertex3f(p01.x, p01.y, p01.z);
-
-            colorForHeight(p10.y / maxHeight);
-            glNormal3f(p10.nx, p10.ny, p10.nz);
-            glVertex3f(p10.x, p10.y, p10.z);
-
-            colorForHeight(p11.y / maxHeight);
-            glNormal3f(p11.nx, p11.ny, p11.nz);
-            glVertex3f(p11.x, p11.y, p11.z);
+            emitQuad(p00, p10, p01, p11, 25.0f, s, r, /*isGrassPass=*/true, pastoTint);
         }
     }
     glEnd();
 
-    // "Falda" submarina: baja desde el borde real de la isla (que ya
-    // incluye la forma irregular) hasta bien por debajo del nivel del mar,
-    // para que nunca se vea un hueco entre el agua y la base de la isla
+    glDepthFunc(GL_LESS); // restauramos el default para el resto de la escena
+    glDisable(GL_BLEND);
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glDisable(GL_TEXTURE_2D);
+
+    // ==================================================
+    // 3. Falda submarina y rocas con color solido (sin cambios)
+    // ==================================================
     const float skirtDepth = 4.0f;
     glColor3f(0.32f, 0.30f, 0.28f);
     glBegin(GL_TRIANGLES);
@@ -220,8 +310,6 @@ void Island::draw() const {
     }
     glEnd();
 
-    // Rocas alrededor de la orilla, siguiendo el mismo contorno irregular
-    // que el borde real de la isla (no un circulo aparte)
     const int nRocks = 16;
     for (int i = 0; i < nRocks; ++i) {
         float t = (float)i / (float)nRocks;

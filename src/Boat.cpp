@@ -40,12 +40,29 @@ namespace {
         emitTri(a, b, c);
         emitTri(a, c, d);
     }
+
+    // --- Version con textura, usada solo para la cubierta ---
+    // Genera coordenadas UV a partir de la posicion local (x,z) del vertice,
+    // escaladas por uScale/vScale (ajusta estos valores para que el patron
+    // de la textura se vea del tamaño correcto sobre la cubierta).
+    void emitTriTex(const V3& a, const V3& b, const V3& c, float uScale, float vScale) {
+        V3 n = normalizeV(crossV(sub(b, a), sub(c, a)));
+        glNormal3f(n.x, n.y, n.z);
+        glTexCoord2f(a.x * uScale, a.z * vScale); glVertex3f(a.x, a.y, a.z);
+        glTexCoord2f(b.x * uScale, b.z * vScale); glVertex3f(b.x, b.y, b.z);
+        glTexCoord2f(c.x * uScale, c.z * vScale); glVertex3f(c.x, c.y, c.z);
+    }
+
+    void emitQuadTex(const V3& a, const V3& b, const V3& c, const V3& d, float uScale, float vScale) {
+        emitTriTex(a, b, c, uScale, vScale);
+        emitTriTex(a, c, d, uScale, vScale);
+    }
 }
 
 Boat::Boat(float posX, float posZ, float len, float wid, float hgt)
     : x(posX), z(posZ), length(len), width(wid), hullHeight(hgt) {}
 
-void Boat::draw(const Ocean& ocean, float time) const {
+void Boat::draw(const Ocean& ocean, float time, GLuint texCubierta) const {
     // Altura del agua bajo el centro, la proa y la popa, para inclinar
     // el barco (pitch) segun la pendiente de la ola bajo el casco
     float centerY = ocean.getHeightAt(x, z, time);
@@ -105,8 +122,17 @@ void Boat::draw(const Ocean& ocean, float time) const {
         }
         glEnd();
 
-        // Cubierta (plano superior entre las dos bordas)
-        glColor3f(0.62f, 0.55f, 0.42f);
+        // ==================================================
+        // Cubierta (plano superior entre las dos bordas) - CON TEXTURA
+        // ==================================================
+        const float deckUScale = 0.9f; // repeticiones de la textura a lo ancho
+        const float deckVScale = 0.5f; // repeticiones de la textura a lo largo
+
+        glEnable(GL_TEXTURE_2D);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        glBindTexture(GL_TEXTURE_2D, texCubierta);
+        glColor3f(1.0f, 1.0f, 1.0f); // color real, sin tintar la textura
+
         glBegin(GL_TRIANGLES);
         for (int i = 0; i < nSt - 1; ++i) {
             const Station& a = st[i];
@@ -115,9 +141,11 @@ void Boat::draw(const Ocean& ocean, float time) const {
             V3 bL = { -b.hw, b.deckY, b.z };
             V3 bR = {  b.hw, b.deckY, b.z };
             V3 aR = {  a.hw, a.deckY, a.z };
-            emitQuad(aL, bL, bR, aR);
+            emitQuadTex(aL, bL, bR, aR, deckUScale, deckVScale);
         }
         glEnd();
+
+        glDisable(GL_TEXTURE_2D); // el resto del barco (cabina, mastil) no lleva textura
 
 
         float cabinZ0 = -hl * 0.10f, cabinZ1 = hl * 0.35f;

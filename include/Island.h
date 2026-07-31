@@ -1,6 +1,14 @@
 #ifndef ISLAND_H
 #define ISLAND_H
 
+// --- LIBRERÍAS DE OPENGL AÑADIDAS AQUÍ ---
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+// ----------------------------------------
+
 #include <vector>
 
 // Representa una isla/costa estatica (no se anima con el tiempo): una
@@ -51,7 +59,8 @@ public:
            int ringsCount = 16, int slicesCount = 48,
            float irregularityAmount = 0.25f, int seed = 7);
 
-    void draw() const;
+    // Función actualizada para recibir las dos texturas
+    void draw(GLuint texArena, GLuint texPasto) const;
 
     // Utiles para ubicar otros objetos sobre la isla (ej. un faro en la cima)
     float getCenterX() const { return centerX; }
