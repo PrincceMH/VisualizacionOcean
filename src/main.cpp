@@ -34,7 +34,7 @@ Lighthouse lighthouse(island.getCenterX(), island.getPeakHeight(), island.getCen
 int winW = 800, winH = 600;
 float cameraX = 0.0f;
 const float cameraY = 7.5f;
-float cameraZ = 18.0f;
+float cameraZ = 45.0f;
 // Expandimos el Yaw a valores inmensos para girar infinitamente
 const float minYaw = -36000.0f; 
 const float maxYaw = 36000.0f;
@@ -42,7 +42,7 @@ const float maxYaw = 36000.0f;
 const float minPitch = -89.0f;  
 const float maxPitch = 89.0f;
 const float cameraMoveStep = 1.0f;
-const float cameraSafeRadius = 24.0f;
+const float cameraSafeRadius = 100.0f;
 float cameraYaw = 0.0f;
 float cameraPitch = -6.0f;
 float cameraFov = 50.0f;
