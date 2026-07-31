@@ -30,7 +30,6 @@ Island island(0.0f, -45.0f, 85.0f, 40.0f, 20.0f, 32, 128, 0.35f, 11);
 // Le agregamos: 12.0f (altura), 1.8f (radio de la base), y 1.2f (radio superior)
 Lighthouse lighthouse(island.getCenterX(), island.getPeakHeight(), island.getCenterZ(), 12.0f, 1.8f, 1.2f);
 
-// Variables de camara orbital
 int winW = 800, winH = 600;
 float cameraX = 0.0f;
 const float cameraY = 7.5f;
@@ -131,6 +130,7 @@ void display() {
               0.0, 1.0, 0.0);
 
     environment.applyLight();
+    lighthouse.applyLight(simTime);   // foco giratorio del faro (GL_LIGHT1)
     environment.draw(cameraX, cameraY, cameraZ);
 
     // Toggle de iluminacion (tecla L)
@@ -156,6 +156,9 @@ void display() {
     // Apagamos los estados
     glDisable(GL_COLOR_MATERIAL);
     glDisable(GL_FOG);
+
+    // Haz de luz visible del faro (translucido, se dibuja al final)
+    lighthouse.drawBeam(simTime);
 
     glutSwapBuffers();
 }
